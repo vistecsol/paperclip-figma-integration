@@ -1,0 +1,25 @@
+{
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "server/src/services/project-tool-context.ts",
+      "sha256": "f848c428a22ed4ec89a12c498160674b9f6b00f111c2352bf77f170bfec51642"
+    },
+    {
+      "path": "server/src/services/run-identity.ts",
+      "sha256": "2522e883dbe91000ee499458b742037123b6ddfba6006e4a6aeca54588a240f9"
+    },
+    {
+      "path": "server/src/services/access.ts",
+      "sha256": "eb290c0deb6849c30d4e2af9c2323adb5f116629bcea8559e6586247f44a96f3"
+    },
+    {
+      "path": "server/src/services/authorization.ts",
+      "sha256": "45dbd65860bbc3100cf31f9290b8c14fe8c02a9df8624dd1df89b077f935ed70"
+    },
+    {
+      "path": "server/src/services/plugin-database.ts",
+      "sha256": "6ab593f7b75e8844d1113504a7db039567a7626bc7a2718314441b3ded7e313b"
+    }
+  ]
+}

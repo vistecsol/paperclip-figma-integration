@@ -28,7 +28,8 @@
     "./service": "./src/service.mjs",
     "./managed-bridge": "./src/managed-bridge.mjs",
     "./source-registry": "./src/source-registry.mjs",
-    "./worker": "./src/worker.mjs"
+    "./worker": "./src/worker.mjs",
+    "./host-operations": "./src/host-operations.mjs"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
