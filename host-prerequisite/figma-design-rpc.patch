@@ -1,0 +1,97 @@
+--- a/packages/plugins/sdk/src/protocol.ts
++++ b/packages/plugins/sdk/src/protocol.ts
+@@ -1569,6 +1569,9 @@
+     result: void,
+   ];
+ 
++  /** Executes only the original host-captured project Designs API request. */
++  "projectDesigns.execute": [params: Record<string, never>, result: PluginApiResponse];
++
+   // Restricted plugin database namespace
+   "db.namespace": [
+     params: Record<string, never>,
+--- a/packages/plugins/sdk/src/host-client-factory.ts
++++ b/packages/plugins/sdk/src/host-client-factory.ts
+@@ -98,6 +98,9 @@
+  * All methods return promises to support async I/O (database, HTTP, etc.).
+  */
+ export interface HostServices {
++  projectDesigns?: {
++    execute(context?: WorkerHostCallContext): Promise<WorkerToHostMethods["projectDesigns.execute"][1]>;
++  };
+   /** Provides `config.get`. */
+   config: {
+     get(
+@@ -377,6 +380,8 @@
+  * @see PLUGIN_SPEC.md §15 — Capability Model
+  */
+ const METHOD_CAPABILITY_MAP: Record<WorkerToHostMethodName, PluginCapability | null> = {
++  "projectDesigns.execute": "api.routes.register",
++
+   // Config — always allowed
+   "config.get": null,
+ 
+@@ -732,6 +737,11 @@
+       return services.localFolders.deleteFile(params);
+     }),
+ 
++    "projectDesigns.execute": gated("projectDesigns.execute", async (_params, context) => {
++      if (!services.projectDesigns) throw new Error("Project Designs host prerequisite unavailable");
++      return services.projectDesigns.execute(context);
++    }),
++
+     // State
+     "state.get": gated("state.get", async (params) => {
+       return services.state.get(params);
+--- a/packages/plugins/sdk/src/types.ts
++++ b/packages/plugins/sdk/src/types.ts
+@@ -2144,6 +2144,9 @@
+   /** Restricted plugin-owned database namespace. Requires database namespace capabilities. */
+   db: PluginDatabaseClient;
+ 
++  /** Optional until the host project Designs prerequisite is installed. */
++  projectDesigns?: { execute(): Promise<{ status?: number; headers?: Record<string, string>; body?: unknown }> };
++
+   /** Make outbound HTTP requests. Requires `http.outbound`. */
+   http: PluginHttpClient;
+ 
+--- a/packages/plugins/sdk/src/worker-rpc-host.ts
++++ b/packages/plugins/sdk/src/worker-rpc-host.ts
+@@ -566,6 +566,8 @@
+         },
+       },
+ 
++      projectDesigns: { execute: () => callHost("projectDesigns.execute", {}) },
++
+       db: {
+         get namespace() {
+           return databaseNamespace ?? "";
+--- a/server/src/services/plugin-host-services.ts
++++ b/server/src/services/plugin-host-services.ts
+@@ -1,3 +1,4 @@
++import { executeFigmaDesignRequest } from "./figma-design-rpc.js";
+ import type { Db } from "@paperclipai/db";
+ import {
+   activityLog,
+@@ -1417,6 +1418,9 @@
+   };
+ 
+   return {
++    ...(pluginKey === "vistecsol.figma" ? {
++      projectDesigns: { execute: (context?: WorkerHostCallContext) => executeFigmaDesignRequest(db, pluginId, context) },
++    } : {}),
+     config: {
+       async get(params) {
+         const companyId = ensureCompanyId(params.companyId);
+@@ -1540,9 +1544,11 @@
+         return pluginDb.getRuntimeNamespace(pluginId);
+       },
+       async query(params) {
++        if (pluginKey === "vistecsol.figma") throw new Error("Design storage requires the scoped host operation");
+         return pluginDb.query(pluginId, params.sql, params.params);
+       },
+       async execute(params) {
++        if (pluginKey === "vistecsol.figma") throw new Error("Design storage requires the scoped host operation");
+         return pluginDb.execute(pluginId, params.sql, params.params);
+       },
+     },

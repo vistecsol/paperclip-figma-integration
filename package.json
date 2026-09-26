@@ -18,7 +18,9 @@
     "docs",
     "host-prerequisite",
     "scripts",
-    "README.md"
+    "README.md",
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "exports": {
     "./attachments": "./src/attachments.mjs",
@@ -34,6 +36,11 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "check": "node scripts/check.mjs && git diff --check",
-    "prepack": "npm run check && npm test"
+    "prepack": "npm run check && npm test && node scripts/verify-build.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "paperclipPlugin": {
+    "manifest": "./dist/manifest.mjs",
+    "worker": "./dist/worker.mjs"
   }
 }

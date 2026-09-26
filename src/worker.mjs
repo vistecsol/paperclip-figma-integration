@@ -1,14 +1,15 @@
-import { designApi } from './api.mjs';
-import { designService } from './service.mjs';
-
-/** Definition factory for definePlugin. No fallback bridge: host prerequisite
- * negotiation and invocation-bound RPC client must succeed before setup.
- * Call-scoped authority lives on the host, never in this worker singleton.
+/** The worker cannot supply SQL, actor, route or project authority to the host.
+ * execute() runs only the original request captured by the host API route.
  */
-export function designWorker({ store, bridge }) {
-  const service = designService(store, bridge);
+export function designWorker({ projectDesigns }) {
+  if (typeof projectDesigns?.execute !== 'function') throw new Error('Figma host RPC prerequisite required');
   return Object.freeze({
-    onApiRequest: designApi(service),
-    async onHealth() { return { status: 'ok', message: 'Design attachment worker ready' }; },
+    async onApiRequest() {
+      try { return await projectDesigns.execute(); }
+      catch { return { status: 502, body: { error: 'design_operation_failed' } }; }
+    },
+    async onHealth() {
+      return { status: 'degraded', message: 'Attachment RPC available; managed inspection and release qualification incomplete' };
+    },
   });
 }

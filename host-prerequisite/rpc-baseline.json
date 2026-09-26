@@ -1,0 +1,25 @@
+{
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "packages/plugins/sdk/src/protocol.ts",
+      "sha256": "46ce64e6527fc85f767c8a3e66c5687b90c7bb11b2f6c954e96b55d81d89b577"
+    },
+    {
+      "path": "packages/plugins/sdk/src/host-client-factory.ts",
+      "sha256": "a48078a8ae9e6f1dec789087634aec3a39f49dccf0ba9a7a5bb9ce93eea63af8"
+    },
+    {
+      "path": "packages/plugins/sdk/src/types.ts",
+      "sha256": "b4afb572bb0548a6e1ff5995677990cfdc7a28341198f851cd7954e1307a0dc8"
+    },
+    {
+      "path": "packages/plugins/sdk/src/worker-rpc-host.ts",
+      "sha256": "4b84ddbac08ca402595231358a677160cb0605f94508e8a24c61bb337e3e3065"
+    },
+    {
+      "path": "server/src/services/plugin-host-services.ts",
+      "sha256": "c37f333ed78120561e1963b22e9908007b5dbcd4ac1c1a9ac50d721128dac43d"
+    }
+  ]
+}

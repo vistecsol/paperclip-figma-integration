@@ -12,10 +12,7 @@ if (!root) throw new Error('FIGMA_INTEGRATION_ROOT required');
 const { designStore } = await import(pathToFileURL(join(root, 'src/storage.mjs')).href);
 const { hostDesignOperations } = await import(pathToFileURL(join(root, 'src/host-operations.mjs')).href);
 const pluginId = randomUUID();
-const manifest = { id: 'vistecsol.figma', apiVersion: 1 as const, version: '0.1.0-alpha.1',
-  displayName: 'Figma', description: 'Synthetic transaction proof', author: 'VTS', categories: ['workspace' as const],
-  capabilities: ['database.namespace.migrate', 'database.namespace.read', 'database.namespace.write'] as any,
-  entrypoints: { worker: './src/worker.mjs' }, database: { namespaceSlug: 'figma', migrationsDir: 'migrations' } };
+const manifest = (await import(pathToFileURL(join(root!, 'dist/manifest.mjs')).href)).default;
 function storeFor(tx: typeof db) {
   const service = pluginDatabaseService(tx);
   return designStore({ namespace: derivePluginDatabaseNamespace(manifest.id, 'figma'),
@@ -105,4 +102,67 @@ it('actual plugin attachment writes commit with host policy and roll back on tra
   await db.update(heartbeatRuns).set({ status: 'cancelled' }).where(eq(heartbeatRuns.id, authority.actor.runId));
   await expect(operations.mutate({}, { ...add, expectedRevision: 1, url: 'https://figma.com/design/FileB' })).rejects.toThrow('active run');
   expect((await storeFor(db).read(companyId, projectId)).revision).toBe(1);
+});
+
+it('real worker fixed RPC persists only the captured request and denies foreign connections and disabled companies', async () => {
+  const { toolApplications, toolConnections, pluginCompanySettings } = await import('@paperclipai/db');
+  const { createPluginWorkerHandle } = await import('../services/plugin-worker-manager.js');
+  const { captureFigmaApiAuthority } = await import('../services/figma-api-authority.js');
+  const { createHostClientHandlers } = await import('@paperclipai/plugin-sdk');
+  const { buildHostServices } = await import('../services/plugin-host-services.js');
+  const [app] = await db.insert(toolApplications).values({ companyId, name: 'Figma synthetic', type: 'mcp' as any }).returning();
+  const [connection] = await db.insert(toolConnections).values({ companyId, applicationId: app.id, name: 'Figma synthetic', uid: randomUUID(),
+    transport: 'mcp_remote', authKind: 'oauth', config: { url: 'https://mcp.figma.com/mcp' } }).returning();
+  const [project] = await db.insert(projects).values({ companyId, name: 'RPC isolated' }).returning();
+  const { pluginLoader } = await import('../services/plugin-loader.js');
+  const loadedManifest = await pluginLoader(db).loadManifest(root!);
+  expect(loadedManifest?.id).toBe('vistecsol.figma');
+  const nativeServices = buildHostServices(db, pluginId, 'vistecsol.figma', {
+    forPlugin: () => ({ emit() {}, subscribe() {}, clear() {} }),
+  } as any, undefined, { manifest: loadedManifest! });
+  const handle = createPluginWorkerHandle(pluginId, {
+    entrypointPath: join(root!, 'dist/worker.mjs'),
+    manifest: loadedManifest!, config: {}, apiVersion: 1, autoRestart: false,
+    instanceInfo: { instanceId: 'isolated', hostVersion: '2026.916.1' },
+    hostHandlers: createHostClientHandlers({ pluginId, capabilities: ['api.routes.register'],
+      services: nativeServices }),
+  });
+  const call = async (routeKey: string, body: unknown = null) => {
+    const input = { routeKey, method: routeKey === 'designs.list' ? 'GET' : 'POST', path: '/',
+      params: { projectId: project.id }, companyId, body, query: {}, headers: {},
+      actor: { actorType: 'user', actorId: 'local-board' }, testHostMethod: 'projectDesigns.execute' };
+    captureFigmaApiAuthority(input, { type: 'board', source: 'local_implicit', userId: 'local-board' }, companyId, project.id);
+    if (routeKey === 'designs.mutate') input.body = { type: 'detach', id: 'forged', expectedRevision: 0 };
+    return await handle.call('handleApiRequest', input as any) as any;
+  };
+  await handle.start();
+  try {
+    const added = await call('designs.mutate', { type: 'add', expectedRevision: 0, connectionId: connection.id, url: 'https://figma.com/design/RealRpc?node-id=2-3' });
+    expect(added.status).toBe(200);
+    expect(added.body.attachments[0].fileKey).toBe('RealRpc');
+    expect((await storeFor(db).read(companyId, project.id)).revision).toBe(1);
+    const foreign = await call('designs.mutate', { type: 'add', expectedRevision: 1, connectionId: randomUUID(), url: 'https://figma.com/design/Foreign' });
+    expect(foreign.status).toBe(403);
+    expect((await storeFor(db).read(companyId, project.id)).revision).toBe(1);
+    // A plausible official transportConfig must not hide a different effective endpoint.
+    await db.update(toolConnections).set({ config: { url: 'https://invalid.example/mcp' },
+      transportConfig: { url: 'https://mcp.figma.com/mcp' } }).where(eq(toolConnections.id, connection.id));
+    expect((await call('designs.mutate', { type: 'add', expectedRevision: 1, connectionId: connection.id,
+      url: 'https://figma.com/design/Spoof' })).status).toBe(403);
+    await db.insert(pluginCompanySettings).values({ companyId, pluginId, enabled: false });
+    expect((await call('designs.list')).status).toBe(403);
+    await db.update(pluginCompanySettings).set({ enabled: true }).where(eq(pluginCompanySettings.pluginId, pluginId));
+    expect((await call('designs.list')).body.attachments).toHaveLength(1);
+  } finally { await handle.stop(); nativeServices.dispose(); }
+});
+
+it('native host services deny direct namespace SQL for the Figma worker', async () => {
+  const { buildHostServices } = await import('../services/plugin-host-services.js');
+  const services = buildHostServices(db, pluginId, 'vistecsol.figma', {
+    forPlugin: () => ({ emit() {}, subscribe() {}, clear() {} }),
+  } as any);
+  try {
+    await expect(services.db.query({ sql: 'SELECT * FROM forbidden', params: [] })).rejects.toThrow('scoped host operation');
+    await expect(services.db.execute({ sql: 'DELETE FROM forbidden', params: [] })).rejects.toThrow('scoped host operation');
+  } finally { services.dispose(); }
 });

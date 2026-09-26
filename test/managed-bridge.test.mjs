@@ -47,15 +47,17 @@ test('fixed inspection operation rejects URL/tool argument injection by projecti
   assert.deepEqual(await h.bridge.inspect({ ...request, tool: 'write_canvas', url: 'https://evil.invalid' }), { state: 'transient_error' });
   await assert.rejects(h.bridge.inspect({ ...request, fileKey: 'https://evil.invalid' }));
 });
-test('worker executes scoped API through the bridge and redacts unexpected errors', async () => {
-  const h = harness(); let reads = 0;
-  const worker = designWorker({ bridge: h.bridge, store: { async read() { reads++; return emptyDesigns(); } } });
-  const input = { routeKey: 'designs.list', method: 'GET', companyId: 'c', params: { projectId: 'p' }, actor };
-  assert.equal((await worker.onApiRequest(input)).status, 200);
-  h.state.active = false;
-  assert.equal((await worker.onApiRequest(input)).status, 403);
-  assert.equal(reads, 1);
-  assert.throws(() => designWorker({ store: {} }), /Managed host bridge/);
+test('worker sends no caller authority and redacts unexpected RPC errors', async () => {
+  let fail = false;
+  const worker = designWorker({ projectDesigns: { async execute(...args) {
+    assert.deepEqual(args, []);
+    if (fail) throw new Error('private-rpc-response');
+    return { status: 200, body: emptyDesigns() };
+  } } });
+  assert.equal((await worker.onApiRequest({ actor: 'forged', projectId: 'foreign' })).status, 200);
+  fail = true;
+  assert.deepEqual(await worker.onApiRequest({}), { status: 502, body: { error: 'design_operation_failed' } });
+  assert.throws(() => designWorker({ store: {} }), /host RPC prerequisite/);
 });
 test('provider failures are redacted at the bridge, before worker RPC', async () => {
   const h = harness(); h.inspecting(async () => { throw new Error('private-provider-response'); });
