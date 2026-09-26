@@ -15,7 +15,7 @@ Full interface work remains gated on actual managed-runtime proof.
 - Both modified existing host files were compared byte-for-byte with the public
   pinned upstream commit; their SHA-256 values are in `host-prerequisite/baseline.json`.
 - Review patch: `host-prerequisite/figma-managed-oauth.patch`, SHA-256
-  `8cd474080b460d5999ac3392ab71dce17b0e34c2940cea303d973d47c7b4d01b`.
+  `c3f6cbf3b4fdbdd8bcc3f262eeb33d7f81758aafdac764ad2abe1cef08243513`.
 - No running host mutation, installation, production deployment, publication,
   private RTS inspection or real credential access occurred.
 
@@ -66,6 +66,10 @@ synthetic. Commands are reproducible in `host-prerequisite/README.md`.
 | `git -C /app apply --check <review-patch>` | Passed; no host write. |
 | `node --check scripts/build-host-patch.mjs` and `node --check scripts/prepare-host-proof.mjs` | Passed. |
 | Staged whitespace check | Recorded with implementation commit. |
+
+Initial staged whitespace check flagged blank diff-context lines and a trailing blank
+fixture line; patch generation now suppresses blank context whitespace and the
+fixture ends with one newline. The follow-up staged check passed.
 
 Initial harness attempts failed because `patch` was unavailable and the scratch
 copy lacked `tsconfig.base.json`. The committed helper uses `git apply` and copies

@@ -30,7 +30,7 @@
 +      selectOAuthDcrTokenEndpointAuthMethod(
 +        input.endpoints.tokenEndpointAuthMethodsSupported,
 +      );
- 
+
      const host = new URL(input.redirectUri).host;
      const requestedMetadata = {
 -      client_name: `Paperclip (${host})`,
@@ -40,10 +40,10 @@
          "authorization_code",
 --- a/server/src/__tests__/tool-access-service.test.ts
 +++ b/server/src/__tests__/tool-access-service.test.ts
-@@ -11204,6 +11204,180 @@
+@@ -11204,6 +11204,179 @@
      expect(JSON.stringify(completed)).not.toContain("supabase-dcr-secret");
    });
- 
+
 +  it.each(["refresh", "revoked", "issuer-mismatch"])("uses Hermes-compatible Figma DCR through managed credentials: %s", async (scenario) => {
 +    vi.stubEnv("PAPERCLIP_TOOL_OAUTH_FIGMA_CLIENT_ID", "");
 +    vi.stubEnv("PAPERCLIP_TOOL_OAUTH_FIGMA_CLIENT_SECRET", "");
@@ -216,7 +216,6 @@
 +    }
 +
 +  });
-+
 +
    it("preserves the provider's DCR client-auth ordering for Miro token exchange", async () => {
      vi.stubEnv("PAPERCLIP_TOOL_OAUTH_MIRO_CLIENT_ID", "");

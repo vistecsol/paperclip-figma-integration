@@ -31,7 +31,7 @@ let patch = '';
 for (const [index, file] of changes.entries()) {
   const oldPath = join(scratch, `figma-before-${index}`), newPath = join(scratch, `figma-after-${index}`);
   writeFileSync(oldPath, file.original); writeFileSync(newPath, file.updated);
-  const result = spawnSync('diff', ['-u', '--label', file.original ? `a/${file.path}` : '/dev/null', '--label', `b/${file.path}`, oldPath, newPath], {encoding:'utf8'});
+  const result = spawnSync('diff', ['-u', '--suppress-blank-empty', '--label', file.original ? `a/${file.path}` : '/dev/null', '--label', `b/${file.path}`, oldPath, newPath], {encoding:'utf8'});
   if (![0, 1].includes(result.status)) throw new Error('diff failed');
   patch += result.stdout;
 }
