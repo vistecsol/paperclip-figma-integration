@@ -1,0 +1,13 @@
+{
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "packages/plugins/sdk/src/protocol.ts",
+      "sha256": "46ce64e6527fc85f767c8a3e66c5687b90c7bb11b2f6c954e96b55d81d89b577"
+    },
+    {
+      "path": "server/src/services/plugin-worker-manager.ts",
+      "sha256": "220cef73e1fb72a389993367cb13f9b8b51060c48592fce6d3f9888e7534343a"
+    }
+  ]
+}

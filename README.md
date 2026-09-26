@@ -5,14 +5,16 @@ Paperclip plugin yet.** No publication or deployment is authorized.
 
 The repository contains a narrow managed OAuth host prerequisite, isolated test
 harness, attachment domain/service/storage implementation and migration. The
-service's managed authorization bridge is an internal seam that still needs the
-approved host implementation; it is deliberately not exposed as a worker/API.
+invocation-bound bridge, source lifecycle registry and worker definition are
+review modules. Host policy/RPC binding and runtime registration remain required
+before they can be loaded as a working plugin.
 
 Paperclip target: `2026.916.1`, source
 `d554c4789ed3930f8a53ac9fdf6503b3187097da`.
 Hermes compatibility reference:
 `06a495cc5b1f6baf429e02825103888dfbdf5ec7`.
-See [API/discovery checkpoint](docs/api-discovery-checkpoint.md),
+See [bridge checkpoint](docs/bridge-checkpoint.md),
+[API/discovery checkpoint](docs/api-discovery-checkpoint.md),
 [attachment checkpoint](docs/attachment-checkpoint.md) and
 [OAuth prerequisite](host-prerequisite/README.md).
 

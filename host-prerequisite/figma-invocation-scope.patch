@@ -1,0 +1,46 @@
+--- a/packages/plugins/sdk/src/protocol.ts
++++ b/packages/plugins/sdk/src/protocol.ts
+@@ -282,6 +282,16 @@
+  */
+ export interface PluginInvocationScope {
+   companyId: string;
++  /** Host-derived API identity. Never recover these fields from worker RPC args. */
++  apiRequest?: {
++    projectId: string | null;
++    actor: {
++      actorType: "user" | "agent";
++      actorId: string;
++      agentId: string | null;
++      runId: string | null;
++    };
++  };
+ }
+ 
+ /**
+--- a/server/src/services/plugin-worker-manager.ts
++++ b/server/src/services/plugin-worker-manager.ts
+@@ -1119,6 +1119,24 @@
+     if (!isRecord(params)) return null;
+ 
+     const directCompanyId = readNonEmptyString(params.companyId);
++    if (directCompanyId && method === "handleApiRequest" && isRecord(params.actor)) {
++      // params is the host-generated API envelope, not the HTTP request body.
++      // Missing identity never falls back to worker-supplied identity later.
++      const actor = params.actor;
++      const actorId = readNonEmptyString(actor.actorId);
++      const agentId = readNonEmptyString(actor.agentId);
++      const runId = readNonEmptyString(actor.runId);
++      if (actorId && (actor.actorType === "user" ||
++          (actor.actorType === "agent" && agentId && runId))) {
++        return {
++          companyId: directCompanyId,
++          apiRequest: {
++            projectId: isRecord(params.params) ? readNonEmptyString(params.params.projectId) : null,
++            actor: { actorType: actor.actorType, actorId, agentId, runId },
++          },
++        };
++      }
++    }
+     if (directCompanyId) return { companyId: directCompanyId };
+ 
+     if (method === "performAction" && isRecord(params.actorContext)) {

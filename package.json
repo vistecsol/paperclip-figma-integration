@@ -25,7 +25,10 @@
     "./storage": "./src/storage.mjs",
     "./api": "./src/api.mjs",
     "./discovery": "./src/discovery.mjs",
-    "./service": "./src/service.mjs"
+    "./service": "./src/service.mjs",
+    "./managed-bridge": "./src/managed-bridge.mjs",
+    "./source-registry": "./src/source-registry.mjs",
+    "./worker": "./src/worker.mjs"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
