@@ -77,3 +77,9 @@ If subsequently activated in an authorized test instance, disable the connection
 and remove its grants/installations using Paperclip controls before rolling back
 the host prerequisite. Preserve attachment/link records and managed secret
 lifecycle; do not delete database schemas or copy credentials to another host.
+
+The inspection prerequisite adds a fixed gateway metadata operation and a
+host-only API session capture. It requires the exact pinned gateway source in
+`inspection-baseline.json`; `figma-inspection.patch` is applied only to the
+explicit isolated/approved host build. See `docs/inspection-checkpoint.md` for
+agent-session requirements and the unfinished board workflow.

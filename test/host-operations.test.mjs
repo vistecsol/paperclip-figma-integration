@@ -58,3 +58,10 @@ test('read and source paths use project transaction without Figma access', async
   assert.ok(h.events.filter(e => e[0] === 'authorize').every(e => e[1] === false));
   assert.ok(!h.events.some(e => e[0] === 'connection' || e[0] === 'write'));
 });
+test('verification rejects stale state and unavailable managed authority before persisting', async () => {
+  const h = harness();
+  const saved = await h.operations.mutate(request, add);
+  await assert.rejects(h.operations.verify(request, saved.attachments[0].id, 0), { code: 'stale_revision' });
+  await assert.rejects(h.operations.verify(request, saved.attachments[0].id, 1), { code: 'managed_session_required' });
+  assert.equal(h.snapshot().attachments[0].verification.state, 'unverified');
+});

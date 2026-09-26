@@ -96,6 +96,17 @@ function changeDesigns(current, command, options = {}) {
   });
   return { revision: current.revision + 1, attachments };
 }
+function verifiedDesigns(current, id, result, checkedAt) {
+  const states = ["accessible", "access_denied", "missing", "reconnect_required", "transient_error", "rate_limited"];
+  if (!states.includes(result) || !Number.isFinite(Date.parse(checkedAt))) fail("invalid_verification");
+  if (current.revision >= Number.MAX_SAFE_INTEGER) fail("revision_exhausted", 409);
+  const next = structuredClone(current);
+  const row = next.attachments.find((a) => a.id === id);
+  if (!row) fail("design_not_found", 404);
+  row.verification = { state: result, checkedAt };
+  next.revision++;
+  return next;
+}
 function designSourceIndex(snapshot) {
   return {
     kind: "figma_design_sources",
@@ -204,6 +215,17 @@ function hostDesignOperations({ withProject }) {
   return Object.freeze({
     list: (request) => execute(request, false, ({ store, companyId, projectId }) => store.read(companyId, projectId)),
     sources: (request) => execute(request, false, async ({ store, companyId, projectId }) => designSourceIndex(await store.read(companyId, projectId))),
+    verify: (request, id, expectedRevision) => execute(request, true, async ({ store, companyId, projectId, authorizeConnection, inspect }) => {
+      const before = await store.read(companyId, projectId);
+      if (before.revision !== expectedRevision) throw new DesignError("stale_revision", 409);
+      const row = before.attachments.find((item) => item.id === id);
+      if (!row) throw new DesignError("design_not_found", 404);
+      if (typeof inspect !== "function") throw new DesignError("managed_session_required", 409);
+      await authorizeConnection(row.connectionId);
+      const result = await inspect({ connectionId: row.connectionId, fileKey: row.fileKey, nodeId: row.nodeId });
+      const after = verifiedDesigns(before, id, result.state, (/* @__PURE__ */ new Date()).toISOString());
+      return store.compareAndSwap(companyId, projectId, before, after);
+    }),
     mutate: (request, command) => {
       const input = structuredClone(command);
       return execute(request, true, async ({ store, companyId, projectId, authorizeConnection }) => {

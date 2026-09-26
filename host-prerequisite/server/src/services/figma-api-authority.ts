@@ -4,15 +4,16 @@ import { forbidden } from "../errors.js";
 import type { FigmaProjectAuthority } from "./figma-project-transaction.js";
 
 // Object identity is local to the host. Nothing in either map is serialized.
-type Capture = { authority: FigmaProjectAuthority; request: PluginApiRequestInput };
+type Inspector = (reference: { connectionId: string; fileKey: string; nodeId: string | null }) => Promise<{ state: string }>;
+type Capture = { inspect?: Inspector; authority: FigmaProjectAuthority; request: PluginApiRequestInput };
 const envelopes = new WeakMap<object, Capture>();
 const invocations = new WeakMap<object, Capture & { active: () => boolean }>();
 
 export function captureFigmaApiAuthority(
-  envelope: object, actor: Request["actor"], companyId: string, projectId: string | undefined,
+  envelope: object, actor: Request["actor"], companyId: string, projectId: string | undefined, inspect?: Inspector,
 ): void {
   if (!projectId || !["board", "agent"].includes(actor.type)) return;
-  envelopes.set(envelope, { authority: structuredClone({ actor, companyId, projectId }),
+  envelopes.set(envelope, { inspect, authority: structuredClone({ actor, companyId, projectId }),
     request: structuredClone(envelope) as PluginApiRequestInput });
 }
 
@@ -53,7 +54,7 @@ export function bindFigmaApiAuthority(
 }
 
 export function resolveFigmaApiAuthority(context?: WorkerHostCallContext): {
-  authority: FigmaProjectAuthority; request: PluginApiRequestInput; assertActive: () => void;
+  authority: FigmaProjectAuthority; request: PluginApiRequestInput; inspect?: Inspector; assertActive: () => void;
 } {
   const entry = context?.invocationScope && !context.invalidInvocationScope
     ? invocations.get(context.invocationScope) : undefined;
@@ -61,5 +62,5 @@ export function resolveFigmaApiAuthority(context?: WorkerHostCallContext): {
     if (!entry?.active()) throw forbidden("Design invocation is unavailable");
   };
   assertActive();
-  return { authority: structuredClone(entry!.authority), request: structuredClone(entry!.request), assertActive };
+  return { inspect: entry!.inspect, authority: structuredClone(entry!.authority), request: structuredClone(entry!.request), assertActive };
 }

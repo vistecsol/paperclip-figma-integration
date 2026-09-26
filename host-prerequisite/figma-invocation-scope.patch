@@ -18,12 +18,13 @@
        // invocation scope, never from the worker. This binds the sink to the
 --- a/server/src/routes/plugins.ts
 +++ b/server/src/routes/plugins.ts
-@@ -1,3 +1,4 @@
+@@ -1,3 +1,5 @@
++import { captureFigmaInspector } from "../services/figma-inspection.js";
 +import { captureFigmaApiAuthority, captureFigmaUiAuthority } from "../services/figma-api-authority.js";
  /**
   * @fileoverview Plugin management REST API routes
   *
-@@ -1437,16 +1438,20 @@
+@@ -1437,16 +1439,20 @@
      const companyId = assertPluginBridgeScope(req, body.companyId);
 
      try {
@@ -50,7 +51,7 @@
        res.json({ data: result });
      } catch (err) {
        const bridgeError = mapRpcErrorToBridgeError(err);
-@@ -1530,16 +1535,20 @@
+@@ -1530,16 +1536,20 @@
      const companyId = assertPluginBridgeScope(req, body.companyId);
 
      try {
@@ -77,11 +78,12 @@
        res.json({ data: result });
      } catch (err) {
        const bridgeError = mapRpcErrorToBridgeError(err);
-@@ -1907,6 +1916,7 @@
+@@ -1907,6 +1917,8 @@
          headers: sanitizePluginRequestHeaders(req),
        };
 
-+      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId);
++      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId,
++        captureFigmaInspector(req, match.params.projectId));
        const result = await bridgeDeps.workerManager.call(
          plugin.id,
          "handleApiRequest",

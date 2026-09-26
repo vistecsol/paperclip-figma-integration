@@ -8,11 +8,12 @@ live Figma behavior remain unproven.
 
 Paperclip target `2026.916.1` / `d554c4789ed3930f8a53ac9fdf6503b3187097da`
 requires the explicit reviewed host prerequisites. The package does not patch
-host source. Unpatched hosts are rejected. Managed inspection returns 501;
+host source. Unpatched hosts are rejected. Agent access checks now require a matching native managed gateway session; board access checks report that requirement.
 the native Designs UI is implemented and tested in isolation. Runtime source delivery now has isolated host/database and shared-renderer proof;
-actual fresh-agent sessions, managed inspection and live onboarding remain incomplete.
+Actual fresh-agent sessions, live managed inspection and onboarding acceptance remain incomplete.
 
-See [source/onboarding evidence](docs/source-onboarding-checkpoint.md),
+See [inspection checkpoint](docs/inspection-checkpoint.md),
+[source/onboarding evidence](docs/source-onboarding-checkpoint.md),
 [UI/recovery evidence](docs/ui-recovery-checkpoint.md),
 [RPC/package evidence](docs/rpc-package-checkpoint.md),
 [draft runbook](docs/draft-runbook.md) and

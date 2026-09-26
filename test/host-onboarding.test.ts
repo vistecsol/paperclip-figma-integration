@@ -1,8 +1,14 @@
+import express from 'express';
+import request from 'supertest';
+import { eq } from 'drizzle-orm';
+import { readPaperclipSkillSyncPreference, writePaperclipSkillSyncPreference } from '@paperclipai/adapter-utils/server-utils';
+import { agentRoutes } from '../routes/agents.js';
+import { errorHandler } from '../middleware/index.js';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { beforeAll, afterAll, expect, it } from 'vitest';
-import { createDb, companies } from '@paperclipai/db';
+import { createDb, companies, agents } from '@paperclipai/db';
 import { companySkillService } from '../services/company-skills.js';
 import { resolvePaperclipInstanceRoot } from '../home-paths.js';
 import { startEmbeddedPostgresTestDatabase } from './helpers/embedded-postgres.js';
@@ -20,6 +26,7 @@ afterAll(async () => { await database?.cleanup(); });
 it('native importer pins official bytes and reuses the same row; remote audit is explicitly unsupported', async () => {
   const [company] = await db.insert(companies).values({ name: 'Synthetic onboarding fixture', issuePrefix: 'FON' }).returning();
   const service = companySkillService(db);
+  const existing = await service.createLocalSkill(company.id, { name: 'Preserved fixture', slug: 'preserved-fixture', markdown: '# Preserve this fixture skill\n' });
   const before = await service.listFull(company.id);
   const first = await service.importFromSource(company.id, pin.importSource);
   expect(first.imported).toHaveLength(1);
@@ -33,6 +40,26 @@ it('native importer pins official bytes and reuses the same row; remote audit is
   const after = await service.listFull(company.id);
   expect(before.every(row => after.some(saved => saved.id === row.id && saved.markdown === row.markdown))).toBe(true);
   await expect(service.auditSkill(company.id, skill.id)).rejects.toThrow('Only local-path and catalog-managed');
+  // Use the native HTTP assignment route; the process adapter has no external
+  // runtime to mutate. Audit remains rejected above and is never forged.
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => { (req as any).actor = { type: 'board', source: 'local_implicit', userId: 'isolated-board', companyIds: [company.id] }; next(); });
+  app.use('/api', agentRoutes(db));
+  app.use(errorHandler);
+  const existingKey = existing.key;
+  for (const name of ['Existing eligible fixture', 'Future eligible fixture']) {
+    const [agent] = await db.insert(agents).values({ companyId: company.id, name, role: 'engineer', adapterType: 'process',
+      adapterConfig: writePaperclipSkillSyncPreference({}, [{ key: existingKey, versionId: null }]) }).returning();
+    for (let replay = 0; replay < 2; replay++) {
+      const response = await request(app).post(`/api/agents/${agent.id}/skills/sync`).send({ mode: 'add', desiredSkills: [skill.key] });
+      expect(response.status, JSON.stringify(response.body)).toBe(200);
+      const [saved] = await db.select().from(agents).where(eq(agents.id, agent.id));
+      const keys = readPaperclipSkillSyncPreference(saved.adapterConfig).desiredSkills;
+      expect(keys).toContain(existingKey);
+      expect(keys.filter(key => key === skill.key)).toHaveLength(1);
+    }
+  }
   const foreign = await db.insert(companies).values({ name: 'Synthetic boundary fixture', issuePrefix: 'FOB' }).returning();
   expect(await service.getById(foreign[0].id, skill.id)).toBeNull();
 }, 60000);

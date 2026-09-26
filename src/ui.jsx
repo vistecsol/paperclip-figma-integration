@@ -5,6 +5,7 @@ const messages = {
   stale_revision: 'Designs changed. Reload before trying again.',
   duplicate_design: 'This design is already attached to this connection.',
   design_access_denied: 'You do not have access to these designs.',
+  managed_session_required: 'Check access from an authorized managed agent session.',
   managed_inspection_unavailable: 'Access checks are not available yet.',
 };
 const states = { unverified: 'Not checked', accessible: 'Accessible', access_denied: 'Access denied',

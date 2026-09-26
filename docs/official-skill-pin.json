@@ -5,5 +5,5 @@
   "sha256": "a6e852421e4db72260b2ca641929b1f84684e5b067aead081e35111f5b5feee4",
   "importSource": "https://github.com/figma/mcp-server-guide/tree/38308b7bbc676a9e9d57795ad4793fa9682d1644/skills/figma-design-to-code",
   "distribution": "reference-only; upstream content is not included",
-  "review": "Inspection-compatible context and screenshot retrieval; no canvas-write instructions in this skill. Company import/audit and additive assignments remain to be exercised in the isolated host."
+  "review": "Inspection-compatible context and screenshot retrieval; no canvas-write instructions in this skill. Isolated pinned import and native additive assignment/replay passed. Native audit rejects GitHub imports; inventory review, actual runtime visibility and onboarding acceptance remain open."
 }

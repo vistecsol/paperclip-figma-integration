@@ -168,6 +168,24 @@ it('real worker fixed RPC persists only the captured request and denies foreign 
     uiAction.params.command.label = 'worker forgery';
     expect((await handle.call('performAction', uiAction) as any).body.attachments[0].label).toBe('UI rename');
     expect((await handle.call('performAction', structuredClone(uiAction)) as any).status).toBe(403);
+    await db.update(toolConnections).set({ config: { url: 'https://mcp.figma.com/mcp' } }).where(eq(toolConnections.id, connection.id));
+    const verification = { routeKey: 'designs.verify', method: 'POST', path: '/', companyId,
+      params: { projectId: project.id, designId: added.body.attachments[0].id },
+      body: { expectedRevision: 2 }, query: {}, headers: {}, actor: apiActor };
+    let inspected = 0;
+    captureFigmaApiAuthority(verification, board, companyId, project.id, async reference => {
+      inspected++;
+      expect(reference).toEqual({ connectionId: connection.id, fileKey: 'RealRpc', nodeId: '2:3' });
+      return { state: 'accessible' }; // synthetic inspection; actual gateway tested separately
+    });
+    const verified = await handle.call('handleApiRequest', verification as any) as any;
+    expect(verified.status).toBe(200);
+    expect(verified.body.revision).toBe(3);
+    expect(verified.body.attachments[0].verification.state).toBe('accessible');
+    expect((await storeFor(db).read(companyId, project.id)).revision).toBe(3);
+    captureFigmaApiAuthority(verification, board, companyId, project.id, async () => { inspected++; return { state: 'accessible' }; });
+    expect((await handle.call('handleApiRequest', verification as any) as any).status).toBe(409);
+    expect(inspected).toBe(1);
     const agentInput = { ...uiList };
     captureFigmaUiAuthority(agentInput, { type: 'agent', agentId: 'unbound-agent' } as any, companyId, apiActor, 'getData');
     expect((await handle.call('getData', agentInput) as any).status).toBe(403);

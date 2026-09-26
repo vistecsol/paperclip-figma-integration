@@ -9,7 +9,7 @@ const target = join(scratch, process.argv[3] ?? 'host-proof');
 if (existsSync(target)) throw new Error('Use a fresh scratch directory; existing proof tree is preserved');
 const baseline = JSON.parse(readFileSync('host-prerequisite/baseline.json', 'utf8'));
 const policyBaseline = JSON.parse(readFileSync('host-prerequisite/project-policy-baseline.json', 'utf8'));
-for (const file of [...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
+for (const file of [...JSON.parse(readFileSync('host-prerequisite/inspection-baseline.json', 'utf8')).files, ...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
   const bytes = readFileSync(join(source, file.path));
   if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error(`Host source drift: ${file.path}`);
 }
@@ -56,3 +56,9 @@ const sourcePatch = spawnSync('git', ['-C', target, 'apply', resolve('host-prere
 if (sourcePatch.status !== 0) throw new Error('Source delivery patch application failed');
 copyFileSync('host-prerequisite/server/src/services/figma-run-sources.ts', join(target, 'server/src/services/figma-run-sources.ts'));
 copyFileSync('test/host-onboarding.test.ts', join(target, 'server/src/__tests__/figma-onboarding.test.ts'));
+
+const inspectionPatch = spawnSync('git', ['-C', target, 'apply', resolve('host-prerequisite/figma-inspection.patch')], { stdio: 'inherit' });
+if (inspectionPatch.status !== 0) throw new Error('Inspection patch application failed');
+copyFileSync('host-prerequisite/server/src/services/figma-inspection.ts', join(target, 'server/src/services/figma-inspection.ts'));
+
+copyFileSync('test/host-inspection.test.ts', join(target, 'server/src/__tests__/figma-inspection.test.ts'));

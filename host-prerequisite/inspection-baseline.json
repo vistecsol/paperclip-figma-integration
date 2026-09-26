@@ -1,0 +1,9 @@
+{
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "server/src/services/tool-gateway.ts",
+      "sha256": "9453a307af1c43fdf99a018ee723da5087df4d7c1a1af9e60d293772be0cebdf"
+    }
+  ]
+}

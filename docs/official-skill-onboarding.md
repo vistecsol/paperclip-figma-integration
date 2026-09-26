@@ -53,3 +53,17 @@ on an existing company, inspect its library for a suitable skill or same-key
 conflict: the native importer can update an existing same-key row. Do not blindly
 replay import over customized content. Idempotence above is proven for unchanged
 pinned content in a clean isolated library.
+
+## Additive assignment checkpoint
+
+The isolated native HTTP assignment route now passes additive assignment and
+replay for existing and future synthetic employees, preserving a deliberately
+created prior local skill. The official import remains source type `github`; the
+audit rejection still occurs and no audit status is forged. The supported
+`skills/sync` route accepts that imported reference independently of the audit
+endpoint. Thus the native audit limitation does not itself prevent assignment.
+This proves persisted desired assignments for the process adapter, not runtime
+materialization, fresh-agent visibility, complete inventory review or onboarding
+acceptance. If a native audit is required for acceptance, Elena must select a
+supported reviewed catalog/local-source route with explicit provenance (or keep
+that gate open); do not relabel the GitHub row to make audit accept it.

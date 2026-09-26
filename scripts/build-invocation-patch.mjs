@@ -24,9 +24,10 @@ for (const [i, file] of baseline.files.entries()) {
           () => activeInvocations.get(invocation.id)?.scope === invocationScope && status === "running");
       }`);
   } else if (file.path.endsWith('/routes/plugins.ts')) {
-    updated = 'import { captureFigmaApiAuthority, captureFigmaUiAuthority } from "../services/figma-api-authority.js";\n' + original;
+    updated = 'import { captureFigmaInspector } from "../services/figma-inspection.js";\nimport { captureFigmaApiAuthority, captureFigmaUiAuthority } from "../services/figma-api-authority.js";\n' + original;
     const anchor = '      const result = await bridgeDeps.workerManager.call(\n        plugin.id,\n        "handleApiRequest",';
-    updated = replace(updated, anchor, `      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId);
+    updated = replace(updated, anchor, `      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId,
+        captureFigmaInspector(req, match.params.projectId));
 ${anchor}`);
     for (const method of ['getData', 'performAction']) {
       const body = method === 'getData'

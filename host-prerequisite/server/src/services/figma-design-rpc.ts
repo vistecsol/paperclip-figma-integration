@@ -15,7 +15,7 @@ export async function executeFigmaDesignRequest(
   db: Db, pluginId: string, context?: WorkerHostCallContext,
 ): Promise<PluginApiResponse> {
   try {
-    const { authority, request, assertActive } = resolveFigmaApiAuthority(context);
+    const { authority, request, assertActive, inspect } = resolveFigmaApiAuthority(context);
     const operations = hostDesignOperations({ withProject: (_ignored: unknown, write: boolean, work: (scope: unknown) => Promise<unknown>) =>
       withFigmaProjectTransaction(db, authority, write, async tx => {
         assertActive();
@@ -35,6 +35,12 @@ export async function executeFigmaDesignRequest(
           execute: (sql: string, params: unknown[]) => database.execute(pluginId, sql, params),
         });
         const result = await work({ companyId: authority.companyId, projectId: authority.projectId, store,
+          inspect: inspect ? async (reference: Parameters<NonNullable<typeof inspect>>[0]) => {
+            assertActive();
+            const result = await inspect(reference);
+            assertActive();
+            return result;
+          } : undefined,
           authorizeConnection: async (connectionId: string) => {
             // Association validation only: never asserts a grant or performs MCP.
             const [connection] = await tx.select({ id: toolConnections.id, transport: toolConnections.transport,
@@ -65,10 +71,7 @@ export async function executeFigmaDesignRequest(
         const status = (error as { status?: number })?.status;
         throw new DesignError(status === 403 ? "design_access_denied" : "design_operation_failed", status === 403 ? 403 : 500);
       }) });
-    return await designApi({ ...operations,
-      verify: async () => ({ error: "managed_inspection_unavailable" }),
-    })(request).then((response: PluginApiResponse) => request.routeKey === "designs.verify"
-      ? { status: 501, body: { error: "managed_inspection_unavailable" } } : response);
+    return await designApi(operations)(request);
   } catch {
     // Do not send/log underlying database/provider diagnostics through worker RPC.
     return { status: 403, body: { error: "design_access_denied" } };
