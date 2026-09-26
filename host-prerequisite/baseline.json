@@ -1,0 +1,15 @@
+{
+  "hostVersion": "2026.916.1",
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "hermesCommit": "06a495cc5b1f6baf429e02825103888dfbdf5ec7",
+  "files": [
+    {
+      "path": "server/src/services/tool-access.ts",
+      "sha256": "f7e23f80702cf4a79c75edf5e76f05cbbdbf9bebb9af959cfa13298c4f61fb2d"
+    },
+    {
+      "path": "server/src/__tests__/tool-access-service.test.ts",
+      "sha256": "452194a37ce54e3498e3f58216ae14df7ee98e0522ca443c80b3f1edc167dc1a"
+    }
+  ]
+}
