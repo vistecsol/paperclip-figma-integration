@@ -1,0 +1,25 @@
+{
+  "commit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "packages/shared/src/types/plugin.ts",
+      "sha256": "9d9d08460877e17e5888bca22a7d85892a24b1148b582500752ed20b01963535"
+    },
+    {
+      "path": "packages/plugins/sdk/src/ui/types.ts",
+      "sha256": "05a2b37cddd490d56ff52e6c34f575a69bcf7d5ce46337f5e3560be692bf1e00"
+    },
+    {
+      "path": "packages/plugins/sdk/src/ui/hooks.ts",
+      "sha256": "2cbb40654ffa184f6bcf6d0588afffc8a55c75ddb14b66977a69fb38270e89f3"
+    },
+    {
+      "path": "ui/src/plugins/slots.tsx",
+      "sha256": "9095c419cd5a684fdbf75212c5835198da47855a124e7cb4a9034cf9b9988e80"
+    },
+    {
+      "path": "server/src/services/company-skills.ts",
+      "sha256": "72be1f544ebddeafb6b26b4081a1fd2c2d6f915f7afb9bdbc24d9009bfa3447b"
+    }
+  ]
+}

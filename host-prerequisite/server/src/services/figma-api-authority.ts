@@ -16,6 +16,32 @@ export function captureFigmaApiAuthority(
     request: structuredClone(envelope) as PluginApiRequestInput });
 }
 
+/** Native UI bridge only. Scope selectors remain untrusted until the existing
+ * project transaction checks the original board actor. No worker-selected route
+ * or actor can become authority; agents use the scoped API/run policy path.
+ */
+export function captureFigmaUiAuthority(
+  envelope: { key: string; params?: unknown }, actor: Request["actor"],
+  companyId: string | null | undefined, apiActor: PluginApiRequestInput["actor"],
+  method: "getData" | "performAction",
+): void {
+  if (actor.type !== "board" || !companyId) return;
+  const params = envelope.params;
+  if (!params || typeof params !== "object" || Array.isArray(params)) return;
+  const input = params as Record<string, unknown>;
+  if (typeof input.projectId !== "string") return;
+  const allowed = method === "getData" ? ["designs.list"] : ["designs.mutate", "designs.verify"];
+  if (!allowed.includes(envelope.key)) return;
+  const request: PluginApiRequestInput = {
+    routeKey: envelope.key, method: method === "getData" ? "GET" : "POST", path: "/",
+    params: { projectId: input.projectId, ...(typeof input.designId === "string" ? { designId: input.designId } : {}) },
+    query: {}, headers: {}, companyId, actor: apiActor,
+    body: envelope.key === "designs.verify" ? { expectedRevision: input.expectedRevision } : input.command ?? null,
+  };
+  envelopes.set(envelope, { authority: structuredClone({ actor, companyId, projectId: input.projectId }),
+    request: structuredClone(request) });
+}
+
 export function bindFigmaApiAuthority(
   envelope: unknown, scope: PluginInvocationScope, active: () => boolean,
 ): void {

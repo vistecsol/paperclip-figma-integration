@@ -9,9 +9,11 @@ live Figma behavior remain unproven.
 Paperclip target `2026.916.1` / `d554c4789ed3930f8a53ac9fdf6503b3187097da`
 requires the explicit reviewed host prerequisites. The package does not patch
 host source. Unpatched hosts are rejected. Managed inspection returns 501;
-runtime discovery, UI, official skills and onboarding remain incomplete.
+the native Designs UI is implemented and tested in isolation. Runtime source
+registration, managed inspection, and live onboarding remain incomplete.
 
-See [RPC/package evidence](docs/rpc-package-checkpoint.md),
+See [UI/recovery evidence](docs/ui-recovery-checkpoint.md),
+[RPC/package evidence](docs/rpc-package-checkpoint.md),
 [draft runbook](docs/draft-runbook.md) and
 [OAuth prerequisite](host-prerequisite/README.md).
 
@@ -28,8 +30,8 @@ npm pack --pack-destination "$PAPERCLIP_RUN_SCRATCH_DIR" --json
 Prepack runs syntax/whitespace, package tests and build-integrity checks. No
 credentials or deployment URLs are packaged. Node >=24.11.0 and pinned esbuild
 0.28.2 are required for build; the worker bundles its runtime dependencies with
-[license notices](THIRD_PARTY_NOTICES.md). Official Figma skills are not yet
-pinned or redistributed. The package name is provisional.
+[license notices](THIRD_PARTY_NOTICES.md). The official Figma skill has a [pinned import reference](docs/official-skill-pin.json);
+it is not redistributed or installed by this preview. The package name is provisional.
 
 The required full host typecheck was killed with exit 137; host build/CI and live
 OAuth/shared-agent/lifecycle gates have not passed. See the checkpoint for exact

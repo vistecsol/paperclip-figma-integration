@@ -1,0 +1,63 @@
+{
+  "before": {
+    "memAvailableBytes": 3823738880,
+    "visibleCgroupAncestors": [
+      {
+        "path": "/sys/fs/cgroup",
+        "memory.current": "1437638656",
+        "memory.max": "max",
+        "memory.high": "max",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 2\noom_group_kill 0"
+      }
+    ],
+    "ancestorVisibilityLimit": "Only ancestors exposed by this cgroup namespace can be inspected.",
+    "compilerProcesses": [
+      {
+        "pid": 24,
+        "name": "esbuild",
+        "rssKiB": 8140
+      }
+    ],
+    "effectiveVisibleHeadroomBytes": 3823738880
+  },
+  "host": "<run-scratch>/recovery-proof",
+  "heapMiB": 2048,
+  "command": [
+    "node",
+    "--max-old-space-size=2048",
+    "<run-scratch>/recovery-proof/node_modules/typescript/bin/tsc",
+    "--noEmit",
+    "-p",
+    "<run-scratch>/recovery-proof/server/tsconfig.json"
+  ],
+  "result": "failed",
+  "exitCode": null,
+  "signal": 9,
+  "elapsedSeconds": 78.08,
+  "peakChildRssKiB": 5728748,
+  "diagnosticsFile": "<run-scratch>/compiler-evidence.log",
+  "after": {
+    "memAvailableBytes": 5698342912,
+    "visibleCgroupAncestors": [
+      {
+        "path": "/sys/fs/cgroup",
+        "memory.current": "675934208",
+        "memory.max": "max",
+        "memory.high": "max",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 3\noom_group_kill 0"
+      }
+    ],
+    "ancestorVisibilityLimit": "Only ancestors exposed by this cgroup namespace can be inspected.",
+    "compilerProcesses": [
+      {
+        "pid": 24,
+        "name": "esbuild",
+        "rssKiB": 5496
+      }
+    ],
+    "effectiveVisibleHeadroomBytes": 5698342912
+  },
+  "diagnosticsBytes": 0,
+  "compilerImplementation": "TypeScript 7 launcher uses process.execve to run a native binary; Node heap ceiling does not limit that binary.",
+  "conclusion": "Required host check unpassed; no retry. oom_kill counter increased during SIGKILL interval; other system OOM victims cannot be excluded from this counter alone."
+}

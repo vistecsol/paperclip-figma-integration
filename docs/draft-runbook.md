@@ -42,8 +42,8 @@ host typecheck, tests, build, hooks and CI remain mandatory; do not bypass them.
 5. Prove inspection through fresh eligible-agent runs, shared credentials, grant
    removal, protected-runtime denial, refresh contention and reconnect/revocation.
    The current preview returns 501 for explicit verification; this step cannot
-   pass on the current candidate. Source registration/UI/onboarding also remain
-   unfinished, so no complete connector behavior is claimed.
+   pass on the current candidate. Source registration and onboarding remain
+   unfinished; the Designs UI has isolated DOM/worker proof only, so no complete connector behavior is claimed.
 6. Repeat actual native installation and managed setup on a second clean instance;
    prove no original checkout/instance dependency. Exercise upgrade, restart,
    disable/uninstall and recovery. Record exact commands and results, including

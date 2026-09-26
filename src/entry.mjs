@@ -4,6 +4,9 @@ let worker;
 const plugin = definePlugin({
   async setup(ctx) {
     worker = designWorker(ctx);
+    ctx.data.register('designs.list', () => worker.onApiRequest());
+    ctx.actions.register('designs.mutate', () => worker.onApiRequest());
+    ctx.actions.register('designs.verify', () => worker.onApiRequest());
     // A missing method fails initialization on an unpatched host. A supported
     // host denies this deliberately unscoped probe without touching storage.
     const probe = await ctx.projectDesigns.execute();

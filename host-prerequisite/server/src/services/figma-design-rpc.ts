@@ -47,6 +47,18 @@ export async function executeFigmaDesignRequest(
           },
         });
         assertActive(); // timeout/crash while awaiting SQL must roll back
+        if (request.routeKey === "designs.list") {
+          // Metadata only; available associations do not imply managed-tool grants.
+          const rows = await tx.select({ id: toolConnections.id, name: toolConnections.name,
+            config: toolConnections.config, credentialRefs: toolConnections.credentialRefs,
+          }).from(toolConnections).where(and(eq(toolConnections.companyId, authority.companyId),
+            eq(toolConnections.transport, "mcp_remote"), eq(toolConnections.authKind, "oauth")));
+          assertActive();
+          return { ...(result as object), connections: rows.filter(row =>
+            (row.config.url ?? row.config.endpoint ?? row.config.remoteUrl) === "https://mcp.figma.com/mcp"
+            && !row.credentialRefs.some(ref => ref.placement === "url")
+          ).map(({ id, name }) => ({ id, name })) };
+        }
         return result;
       }).catch((error: unknown) => {
         if (error instanceof DesignError) throw error;

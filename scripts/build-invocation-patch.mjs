@@ -19,21 +19,50 @@ for (const [i, file] of baseline.files.entries()) {
     updated = 'import { bindFigmaApiAuthority } from "./figma-api-authority.js";\n' + original;
     const anchor = '      const invocation = invocationScope ? registerInvocation(invocationScope) : null;';
     updated = replace(updated, anchor, `${anchor}
-      if (invocation && invocationScope && method === "handleApiRequest") {
+      if (invocation && invocationScope && ["handleApiRequest", "getData", "performAction"].includes(method)) {
         bindFigmaApiAuthority(params, invocationScope,
           () => activeInvocations.get(invocation.id)?.scope === invocationScope && status === "running");
       }`);
   } else if (file.path.endsWith('/routes/plugins.ts')) {
-    updated = 'import { captureFigmaApiAuthority } from "../services/figma-api-authority.js";\n' + original;
+    updated = 'import { captureFigmaApiAuthority, captureFigmaUiAuthority } from "../services/figma-api-authority.js";\n' + original;
     const anchor = '      const result = await bridgeDeps.workerManager.call(\n        plugin.id,\n        "handleApiRequest",';
     updated = replace(updated, anchor, `      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId);
 ${anchor}`);
+    for (const method of ['getData', 'performAction']) {
+      const body = method === 'getData'
+        ? `          key: body.key,
+          ...(companyId ? { companyId } : {}),
+          params: body.params ?? {},
+          renderEnvironment: body.renderEnvironment ?? null,`
+        : `          key: body.key,
+          params: actionParamsWithAuthorizedCompanyScope(body.params, companyId),
+          actorContext: performActionActorContext(req, companyId),
+          renderEnvironment: body.renderEnvironment ?? null,`;
+      const anchor = `      const result = await bridgeDeps.workerManager.call(
+        plugin.id,
+        "${method}",
+        {
+${body}
+        },
+      );`;
+      updated = replace(updated, anchor, `      const input = {
+${body}
+      };
+      if (plugin.pluginKey === "vistecsol.figma") {
+        const actor = getActorInfo(req);
+        captureFigmaUiAuthority(input, req.actor, companyId, {
+          actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
+          userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
+        }, "${method}");
+      }
+      const result = await bridgeDeps.workerManager.call(plugin.id, "${method}", input);`);
+    }
   }
   const before = join(scratch, `invocation-before-${i}`), after = join(scratch, `invocation-after-${i}`);
   writeFileSync(before, original); writeFileSync(after, updated);
   const result = spawnSync('diff', ['-u', '--label', `a/${file.path}`, '--label', `b/${file.path}`, before, after], { encoding: 'utf8' });
   if (![0,1].includes(result.status)) throw new Error('Diff failed');
-  patch += result.stdout;
+  patch += result.stdout.replace(/^ $/gm, '');
 }
 writeFileSync('host-prerequisite/figma-invocation-scope.patch', patch);
 console.log('Generated host-only invocation prerequisite; running host unchanged.');

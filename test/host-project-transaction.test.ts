@@ -107,7 +107,7 @@ it('actual plugin attachment writes commit with host policy and roll back on tra
 it('real worker fixed RPC persists only the captured request and denies foreign connections and disabled companies', async () => {
   const { toolApplications, toolConnections, pluginCompanySettings } = await import('@paperclipai/db');
   const { createPluginWorkerHandle } = await import('../services/plugin-worker-manager.js');
-  const { captureFigmaApiAuthority } = await import('../services/figma-api-authority.js');
+  const { captureFigmaApiAuthority, captureFigmaUiAuthority } = await import('../services/figma-api-authority.js');
   const { createHostClientHandlers } = await import('@paperclipai/plugin-sdk');
   const { buildHostServices } = await import('../services/plugin-host-services.js');
   const [app] = await db.insert(toolApplications).values({ companyId, name: 'Figma synthetic', type: 'mcp' as any }).returning();
@@ -153,6 +153,25 @@ it('real worker fixed RPC persists only the captured request and denies foreign 
     expect((await call('designs.list')).status).toBe(403);
     await db.update(pluginCompanySettings).set({ enabled: true }).where(eq(pluginCompanySettings.pluginId, pluginId));
     expect((await call('designs.list')).body.attachments).toHaveLength(1);
+    const board = { type: 'board', source: 'local_implicit', userId: 'local-board' } as any;
+    const apiActor = { actorType: 'user', actorId: 'local-board' } as any;
+    const uiList = { key: 'designs.list', companyId, params: { projectId: project.id } };
+    captureFigmaUiAuthority(uiList, board, companyId, apiActor, 'getData');
+    const uiResult = await handle.call('getData', uiList) as any;
+    expect(uiResult.status).toBe(200);
+    expect(uiResult.body.attachments).toHaveLength(1);
+    expect(uiResult.body.connections).toEqual([]); // substituted endpoint is not offered
+    const uiAction = { key: 'designs.mutate', params: { projectId: project.id,
+      command: { type: 'update', id: added.body.attachments[0].id, label: 'UI rename', expectedRevision: 1 } },
+      actorContext: { companyId, actorType: 'user', actorId: 'local-board' } };
+    captureFigmaUiAuthority(uiAction, board, companyId, apiActor, 'performAction');
+    uiAction.params.command.label = 'worker forgery';
+    expect((await handle.call('performAction', uiAction) as any).body.attachments[0].label).toBe('UI rename');
+    expect((await handle.call('performAction', structuredClone(uiAction)) as any).status).toBe(403);
+    const agentInput = { ...uiList };
+    captureFigmaUiAuthority(agentInput, { type: 'agent', agentId: 'unbound-agent' } as any, companyId, apiActor, 'getData');
+    expect((await handle.call('getData', agentInput) as any).status).toBe(403);
+
   } finally { await handle.stop(); nativeServices.dispose(); }
 });
 

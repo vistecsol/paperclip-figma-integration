@@ -17,13 +17,15 @@ const workerBuild = await esbuild.build({ entryPoints: ['src/entry.mjs'], outfil
   alias: { '@paperclipai/plugin-sdk': sdk }, sourcemap: false });
 await esbuild.build({ entryPoints: ['src/manifest.mjs'], outfile: 'dist/manifest.mjs',
   bundle: true, platform: 'node', format: 'esm', target: 'node24', sourcemap: false });
+await esbuild.build({ entryPoints: ['src/ui.jsx'], outfile: 'dist/ui/index.js', bundle: true,
+  platform: 'browser', format: 'esm', target: 'es2022', external: ['react', '@paperclipai/plugin-sdk/ui'], sourcemap: false });
 const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex');
 writeFileSync('dist/build-provenance.json', JSON.stringify({
   hostCommit: 'd554c4789ed3930f8a53ac9fdf6503b3187097da', hostVersion: '2026.916.1',
   esbuildVersion: esbuild.version,
-  sourceInputs: Object.fromEntries(readdirSync('src').filter(name => name.endsWith('.mjs')).map(name => [`src/${name}`, hash(`src/${name}`)])),
+  sourceInputs: Object.fromEntries(readdirSync('src').filter(name => /\.(mjs|jsx)$/.test(name)).map(name => [`src/${name}`, hash(`src/${name}`)])),
   prerequisitePatches: Object.fromEntries(['figma-managed-oauth', 'figma-invocation-scope', 'figma-design-rpc'].map(name => [name, hash(`host-prerequisite/${name}.patch`)])),
-  outputs: Object.fromEntries(['worker.mjs', 'manifest.mjs'].map(name => [name, hash(`dist/${name}`)])),
+  outputs: Object.fromEntries(['worker.mjs', 'manifest.mjs', 'ui/index.js'].map(name => [name, hash(`dist/${name}`)])),
   qualification: 'engineering-preview-not-release-ready',
 }, null, 2) + '\n');
 writeFileSync('dist/bundle-inputs.json', JSON.stringify(Object.keys(workerBuild.metafile.inputs).map(path => resolve(path).replaceAll(root, '<prepared-host>').replaceAll('/app', '<host>').replaceAll(process.cwd(), '<integration>')), null, 2) + '\n');
