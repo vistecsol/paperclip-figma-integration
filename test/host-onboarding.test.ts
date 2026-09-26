@@ -1,0 +1,38 @@
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join } from 'node:path';
+import { beforeAll, afterAll, expect, it } from 'vitest';
+import { createDb, companies } from '@paperclipai/db';
+import { companySkillService } from '../services/company-skills.js';
+import { resolvePaperclipInstanceRoot } from '../home-paths.js';
+import { startEmbeddedPostgresTestDatabase } from './helpers/embedded-postgres.js';
+const root = process.env.FIGMA_INTEGRATION_ROOT!;
+const scratch = process.env.PAPERCLIP_RUN_SCRATCH_DIR!;
+const pin = JSON.parse(readFileSync(join(root, 'docs/official-skill-pin.json'), 'utf8'));
+let database: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>>;
+let db: ReturnType<typeof createDb>;
+beforeAll(async () => {
+  if (!scratch || !resolvePaperclipInstanceRoot().startsWith(scratch + '/')) throw new Error('Isolated instance root required');
+  database = await startEmbeddedPostgresTestDatabase('figma-onboarding-');
+  db = createDb(database.connectionString);
+});
+afterAll(async () => { await database?.cleanup(); });
+it('native importer pins official bytes and reuses the same row; remote audit is explicitly unsupported', async () => {
+  const [company] = await db.insert(companies).values({ name: 'Synthetic onboarding fixture', issuePrefix: 'FON' }).returning();
+  const service = companySkillService(db);
+  const before = await service.listFull(company.id);
+  const first = await service.importFromSource(company.id, pin.importSource);
+  expect(first.imported).toHaveLength(1);
+  const skill = first.imported[0];
+  expect(skill.sourceRef).toBe(pin.commit);
+  expect(skill.sourceType).toBe('github');
+  const content = await service.readFile(company.id, skill.id, 'SKILL.md');
+  expect(createHash('sha256').update(content!.content).digest('hex')).toBe(pin.sha256);
+  const repeated = await service.importFromSource(company.id, pin.importSource);
+  expect(repeated.imported.map(row => row.id)).toEqual([skill.id]);
+  const after = await service.listFull(company.id);
+  expect(before.every(row => after.some(saved => saved.id === row.id && saved.markdown === row.markdown))).toBe(true);
+  await expect(service.auditSkill(company.id, skill.id)).rejects.toThrow('Only local-path and catalog-managed');
+  const foreign = await db.insert(companies).values({ name: 'Synthetic boundary fixture', issuePrefix: 'FOB' }).returning();
+  expect(await service.getById(foreign[0].id, skill.id)).toBeNull();
+}, 60000);

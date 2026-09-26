@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { projects, type Db } from "@paperclipai/db";
 import { forbidden } from "../errors.js";
 import { accessService } from "./access.js";
@@ -24,6 +24,7 @@ export async function withFigmaProjectTransaction<T>(
   authority: FigmaProjectAuthority,
   write: boolean,
   work: (tx: Db) => Promise<T>,
+  options: { boundedRead?: boolean } = {},
 ): Promise<T> {
   // Snapshot before the first await, including nested membership/key scopes.
   const { actor, companyId, projectId } = structuredClone(authority);
@@ -32,6 +33,10 @@ export async function withFigmaProjectTransaction<T>(
   }
   return db.transaction(async (transaction) => {
     const tx = transaction as unknown as Db;
+    if (options.boundedRead === true && !write) {
+      await tx.execute(sql`set local statement_timeout = '1500ms'`);
+      await tx.execute(sql`set local lock_timeout = '500ms'`);
+    }
     if (actor.type === "agent") {
       const context = await projectToolContext(tx, actor, write);
       if (context.issue.companyId !== companyId || context.issue.projectId !== projectId) {

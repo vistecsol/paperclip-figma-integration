@@ -9,8 +9,12 @@ Use Paperclip company skills on an authorized test instance. Import only the
 exact `importSource` from the pin record with
 `POST /api/companies/:companyId/skills/import` and `{ "source": "<importSource>" }`.
 The pinned host's importer parses the explicit GitHub tree revision. Inspect the
-returned skill and its stored file, run the native skill audit, and compare its
-content hash to the recorded hash before assigning it. Preserve an existing
+returned skill and its stored file, and compare its content hash to the recorded
+hash before assigning it. Correction from isolated service proof: the native
+audit endpoint accepts only `catalog` and `local_path` skills; it rejects this
+`github` import. Do not claim a native audit pass or silently convert the skill's
+source type. Hash verification covers the pinned SKILL.md, not a complete package
+security audit. Full inventory review and an applicable audit path remain open. Preserve an existing
 suitable skill; do not replace same-name content or accept a floating branch.
 
 For each explicitly eligible same-company employee, read
@@ -36,7 +40,16 @@ accessible state is not a current grant and does not restrict broad OAuth access
 to that file. Figma canvas changes and Code Connect mapping writes are outside
 this integration's inspection scope.
 
-Pending evidence: isolated import/audit, preserved existing assignments,
-idempotent replay, eligible future-employee provisioning, and fresh-run skill
-visibility. No company skill or employee configuration was changed for this
-checkpoint.
+Isolated evidence: the real host company-skill service imported the exact GitHub
+revision, returned SKILL.md matching the recorded hash, and reused the same row on
+repeated import. Existing library rows/content were preserved; foreign-company
+lookup was denied. The native audit rejection was exercised and recorded, not
+waived. The isolated database and skill root contained synthetic companies only.
+
+Pending evidence: complete inventory audit, actual additive agent assignment and
+replay, eligible future-employee provisioning, and fresh-run skill visibility.
+No deployed company library or employee configuration was changed. Before import
+on an existing company, inspect its library for a suitable skill or same-key
+conflict: the native importer can update an existing same-key row. Do not blindly
+replay import over customized content. Idempotence above is proven for unchanged
+pinned content in a clean isolated library.

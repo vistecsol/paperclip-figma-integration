@@ -1,0 +1,13 @@
+{
+  "commit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "server/src/services/heartbeat.ts",
+      "sha256": "50d7b3b58661161af9851685400582840dc8524e4394371029954c0443ac901a"
+    },
+    {
+      "path": "packages/adapter-utils/src/server-utils.ts",
+      "sha256": "575da3c126073245f0b7e262d4d532852718e3a11063089f2f27eefb2ea2b809"
+    }
+  ]
+}

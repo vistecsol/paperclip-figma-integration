@@ -9,7 +9,7 @@ The unmodified Paperclip `2026.916.1` host at commit
 `d554c4789ed3930f8a53ac9fdf6503b3187097da` does not provide the required RPC.
 Worker initialization rejects that unsupported host. Only the isolated patched
 source has been tested. A compatible built host must include the OAuth,
-invocation and RPC prerequisite patches plus the explicitly supplied host service
+invocation, RPC and run-source prerequisite patches plus the explicitly supplied host service
 modules. This is an approved host prerequisite, not a standalone npm-only route;
 the npm package never patches a running host. No broader host range is claimed.
 
@@ -42,8 +42,8 @@ host typecheck, tests, build, hooks and CI remain mandatory; do not bypass them.
 5. Prove inspection through fresh eligible-agent runs, shared credentials, grant
    removal, protected-runtime denial, refresh contention and reconnect/revocation.
    The current preview returns 501 for explicit verification; this step cannot
-   pass on the current candidate. Source registration and onboarding remain
-   unfinished; the Designs UI has isolated DOM/worker proof only, so no complete connector behavior is claimed.
+   pass on the current preview. Source delivery is wired through the shared
+   wake renderer but full fresh-session execution and onboarding remain unproven; the Designs UI has isolated DOM/worker proof only, so no complete connector behavior is claimed.
 6. Repeat actual native installation and managed setup on a second clean instance;
    prove no original checkout/instance dependency. Exercise upgrade, restart,
    disable/uninstall and recovery. Record exact commands and results, including

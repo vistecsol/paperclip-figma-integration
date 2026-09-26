@@ -185,3 +185,37 @@ it('native host services deny direct namespace SQL for the Figma worker', async 
     await expect(services.db.execute({ sql: 'DELETE FROM forbidden', params: [] })).rejects.toThrow('scoped host operation');
   } finally { services.dispose(); }
 });
+
+it('fresh-run sources use native authority, bounded metadata and current plugin availability', async () => {
+  const { collectFigmaRunSources } = await import('../services/figma-run-sources.js');
+  const { pluginCompanySettings } = await import('@paperclipai/db');
+  // Earlier lifecycle checks may have disabled the synthetic plugin.
+  await db.update(plugins).set({ status: 'installed' }).where(eq(plugins.id, pluginId));
+  await db.delete(pluginCompanySettings).where(eq(pluginCompanySettings.pluginId, pluginId));
+  const { authority, run } = await fixture();
+  const input = { companyId, projectId, agentId, runId: run.id };
+  const sources = await collectFigmaRunSources(db, input) as any;
+  expect(sources.kind).toBe('figma_design_sources');
+  expect(sources.trust).toBe('untrusted_data');
+  expect(sources.sources.length).toBeGreaterThan(0);
+  expect(JSON.stringify(sources)).not.toContain('credentialRefs');
+  expect(Buffer.byteLength(JSON.stringify(sources))).toBeLessThanOrEqual(32768);
+  expect(await collectFigmaRunSources(db, { ...input, projectId: otherProjectId })).toBeNull();
+  expect(await collectFigmaRunSources(db, { ...input, companyId: randomUUID() })).toBeNull();
+  await db.insert(pluginCompanySettings).values({ pluginId, companyId, enabled: false });
+  expect(await collectFigmaRunSources(db, input)).toBeNull();
+  await db.delete(pluginCompanySettings).where(eq(pluginCompanySettings.pluginId, pluginId));
+  await db.update(heartbeatRuns).set({ status: 'cancelled' }).where(eq(heartbeatRuns.id, authority.actor.runId));
+  expect(await collectFigmaRunSources(db, input)).toBeNull();
+});
+
+it('source collection cancels a contended database lock and retains saved links', async () => {
+  const { collectFigmaRunSources } = await import('../services/figma-run-sources.js');
+  const { run } = await fixture();
+  const before = await storeFor(db).read(companyId, projectId);
+  await db.transaction(async tx => {
+    await tx.execute(sql`select id from plugins where id = ${pluginId} for update`);
+    expect(await collectFigmaRunSources(db, { companyId, projectId, agentId, runId: run.id })).toBeNull();
+  });
+  expect(await storeFor(db).read(companyId, projectId)).toEqual(before);
+});

@@ -9,7 +9,7 @@ const target = join(scratch, process.argv[3] ?? 'host-proof');
 if (existsSync(target)) throw new Error('Use a fresh scratch directory; existing proof tree is preserved');
 const baseline = JSON.parse(readFileSync('host-prerequisite/baseline.json', 'utf8'));
 const policyBaseline = JSON.parse(readFileSync('host-prerequisite/project-policy-baseline.json', 'utf8'));
-for (const file of [...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
+for (const file of [...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
   const bytes = readFileSync(join(source, file.path));
   if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error(`Host source drift: ${file.path}`);
 }
@@ -33,7 +33,7 @@ copyFileSync('test/fixtures/figma-authority-worker.cjs', join(target, 'server/sr
 
 mkdirSync(join(target, 'packages/plugins/sdk'), { recursive: true });
 for (const entry of readdirSync(join(source, 'packages'))) {
-  if (entry !== 'plugins') symlinkSync(join(source, 'packages', entry), join(target, 'packages', entry));
+  if (!['plugins', 'adapter-utils'].includes(entry)) symlinkSync(join(source, 'packages', entry), join(target, 'packages', entry));
 }
 for (const entry of readdirSync(join(source, 'packages/plugins'))) {
   if (entry !== 'sdk') symlinkSync(join(source, 'packages/plugins', entry), join(target, 'packages/plugins', entry));
@@ -50,3 +50,9 @@ let config = readFileSync(join(target, 'server/vitest.config.ts'), 'utf8');
 config = config.replace('alias: [', `alias: [
       { find: /^@paperclipai\\/plugin-sdk$/, replacement: fileURLToPath(new URL('../packages/plugins/sdk/src/index.ts', import.meta.url)) },`);
 writeFileSync(join(target, 'server/vitest.config.ts'), config);
+
+cpSync(join(source, 'packages/adapter-utils'), join(target, 'packages/adapter-utils'), { recursive: true, dereference: false });
+const sourcePatch = spawnSync('git', ['-C', target, 'apply', resolve('host-prerequisite/figma-run-sources.patch')], { stdio: 'inherit' });
+if (sourcePatch.status !== 0) throw new Error('Source delivery patch application failed');
+copyFileSync('host-prerequisite/server/src/services/figma-run-sources.ts', join(target, 'server/src/services/figma-run-sources.ts'));
+copyFileSync('test/host-onboarding.test.ts', join(target, 'server/src/__tests__/figma-onboarding.test.ts'));
