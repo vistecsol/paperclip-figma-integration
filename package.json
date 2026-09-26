@@ -22,11 +22,14 @@
   ],
   "exports": {
     "./attachments": "./src/attachments.mjs",
-    "./storage": "./src/storage.mjs"
+    "./storage": "./src/storage.mjs",
+    "./api": "./src/api.mjs",
+    "./discovery": "./src/discovery.mjs",
+    "./service": "./src/service.mjs"
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/attachments.mjs && node --check src/storage.mjs && node --check src/service.mjs && git diff --check",
+    "check": "node scripts/check.mjs && git diff --check",
     "prepack": "npm run check && npm test"
   }
 }

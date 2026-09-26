@@ -12,7 +12,8 @@ Paperclip target: `2026.916.1`, source
 `d554c4789ed3930f8a53ac9fdf6503b3187097da`.
 Hermes compatibility reference:
 `06a495cc5b1f6baf429e02825103888dfbdf5ec7`.
-See [current checkpoint](docs/attachment-checkpoint.md) and
+See [API/discovery checkpoint](docs/api-discovery-checkpoint.md),
+[attachment checkpoint](docs/attachment-checkpoint.md) and
 [OAuth prerequisite](host-prerequisite/README.md).
 
 ## Local checks
