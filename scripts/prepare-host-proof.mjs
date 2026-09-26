@@ -19,4 +19,5 @@ copyFileSync(join(source, 'tsconfig.base.json'), join(target, 'tsconfig.base.jso
 for (const entry of ['node_modules', 'packages', 'server/node_modules']) symlinkSync(join(source, entry), join(target, entry));
 const applied = spawnSync('git', ['-C', target, 'apply', resolve('host-prerequisite/figma-managed-oauth.patch')], { stdio: 'inherit' });
 if (applied.status !== 0) throw new Error('Patch application failed');
+copyFileSync('test/host-database.test.ts', join(target, 'server/src/__tests__/figma-attachments-database.test.ts'));
 console.log('Prepared isolated host source proof tree at ' + target);

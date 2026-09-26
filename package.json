@@ -1,0 +1,32 @@
+{
+  "name": "@vistecsol/paperclip-figma-integration",
+  "version": "0.1.0-alpha.1",
+  "description": "Paperclip Figma integration engineering preview; host prerequisites required",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vistecsol/paperclip-figma-integration.git"
+  },
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "files": [
+    "src",
+    "test",
+    "migrations",
+    "docs",
+    "host-prerequisite",
+    "scripts",
+    "README.md"
+  ],
+  "exports": {
+    "./attachments": "./src/attachments.mjs",
+    "./storage": "./src/storage.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/attachments.mjs && node --check src/storage.mjs && node --check src/service.mjs && git diff --check",
+    "prepack": "npm run check && npm test"
+  }
+}
