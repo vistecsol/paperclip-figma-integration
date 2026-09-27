@@ -1,11 +1,13 @@
 {
-  "name": "${FIGMA_TEST_INSTANCE:?Choose a fresh vts-figma-a or vts-figma-b instance}",
+  "name": "${FIGMA_TEST_INSTANCE:?Choose a fresh vts-figma-test-a or vts-figma-test-b instance}",
   "services": {
     "paperclip": {
       "image": "${FIGMA_TEST_IMAGE:?Set the reviewed local sha256 image ID}",
       "pull_policy": "never",
       "restart": "no",
-      "ports": ["127.0.0.1:${FIGMA_TEST_PORT:?Set a distinct unused host port}:3100"],
+      "ports": [
+        "127.0.0.1:${FIGMA_TEST_PORT:?Set a distinct unused host port}:3100"
+      ],
       "mem_limit": "${FIGMA_TEST_MEMORY:?Set operator-approved runtime memory limit}",
       "memswap_limit": "${FIGMA_TEST_MEMORY:?Set operator-approved runtime memory limit}",
       "cpus": "${FIGMA_TEST_CPUS:-2}",
@@ -23,15 +25,47 @@
         "PAPERCLIP_SECRETS_PROVIDER": "local_encrypted",
         "PAPERCLIP_SECRETS_MASTER_KEY_FILE": "/paperclip/instances/default/secrets/master.key"
       },
-      "volumes": ["state:/paperclip"],
-      "networks": ["test"],
+      "volumes": [
+        "state:/paperclip"
+      ],
+      "networks": [
+        "test"
+      ],
       "healthcheck": {
-        "test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],
-        "interval": "15s", "timeout": "5s", "retries": 8, "start_period": "90s"
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 8,
+        "start_period": "90s"
       },
-      "stop_grace_period": "60s"
+      "stop_grace_period": "60s",
+      "container_name": "${FIGMA_TEST_INSTANCE:?Set test instance}-app",
+      "labels": {
+        "vts.figma.issue": "VIS-6",
+        "vts.figma.purpose": "isolated-test"
+      }
     }
   },
-  "volumes": {"state": {}},
-  "networks": {"test": {"driver": "bridge"}}
+  "volumes": {
+    "state": {
+      "labels": {
+        "vts.figma.issue": "VIS-6",
+        "vts.figma.purpose": "isolated-test"
+      }
+    }
+  },
+  "networks": {
+    "test": {
+      "driver": "bridge",
+      "labels": {
+        "vts.figma.issue": "VIS-6",
+        "vts.figma.purpose": "isolated-test"
+      }
+    }
+  }
 }

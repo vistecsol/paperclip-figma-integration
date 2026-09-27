@@ -1,9 +1,11 @@
 # hermes01 isolated Figma test operator bundle
 
-Prepared only. No container, image, database, OAuth setup or compiler run is
-implied by this bundle. Elena owns the remaining launch/capacity decision.
-Nadia owns host/plugin configuration and test execution once a placement is
-approved. Do not execute build/start steps until that decision is saved.
+Rootless isolated testing is authorized by the 27 September board direction.
+Nadia owns test launch and configuration; production resources remain protected.
+The access hold is resolved. Capacity remains a mandatory preflight gate: the
+first rootless probe passed effective limits, but build headroom failed. See
+`docs/rootless-placement-checkpoint.md` for exact evidence. No host build or
+application launch has passed.
 
 ## Exact inputs and isolation
 
@@ -67,7 +69,7 @@ variables configure this bundle. No `DATABASE_URL` or provider key is inherited.
 A config parse proves structure, not image availability, port availability,
 permissions, startup or OAuth. Verify port 4310 is unused with `ss -ltn` and
 verify the project/volume name is unused with `docker compose ls` and
-`docker volume inspect vts-figma-a_state` (expected not found for a clean test).
+`docker volume inspect vts-figma-test-a_state` (expected not found for a clean test).
 Existing volume means stop and choose a new authorized name; never clear it.
 
 ## 2. Capacity and bounded build — Elena decision required
@@ -96,27 +98,22 @@ options at https://docs.docker.com/build/builders/drivers/docker-container/.
 Pin the operator-reviewed BuildKit image digest as `BUILDKIT_IMAGE` before this
 step; that digest and Docker/Buildx versions are still external prerequisites.
 
-```sh
-docker buildx create --name vts-figma-proof --driver docker-container --buildkitd-config operator/buildkitd.toml --driver-opt "image=$BUILDKIT_IMAGE,memory=8g,memory-swap=8g,cpu-period=100000,cpu-quota=200000,restart-policy=no"
-docker buildx inspect vts-figma-proof --bootstrap
-docker inspect buildx_buildkit_vts-figma-proof0 --format '{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}} {{.HostConfig.CpuQuota}}'
-```
+The previous Buildx docker-container recipe is withdrawn: it generates a
+`buildx_buildkit_*` container outside the required `vts-figma-test-*` namespace.
+Do not execute that recipe. Before a build, prepare an explicitly named isolated
+builder and verify its ownership, mounts, network and effective descendant
+cgroups. This builder is not provisioned. All test containers, networks and
+volumes must use `vts-figma-test-*` names; labels and exact IDs must be recorded.
+A prefix is necessary but is never sufficient evidence of safe ownership.
+Never exec into or mutate any production container or Compose resource.
 
-Require memory and swap totals of `8589934592`, and quota `200000`. Also inspect
-that builder's `/sys/fs/cgroup/memory.max` and `memory.events` through a read-only
-`docker exec` before/after building; refuse missing/ineffective limits. Observe the native compiler PID and its `/proc/PID/cgroup` during the approved
-build; verify its cgroup is beneath the measured hard ceiling. Stop if the build
-executor escapes that hierarchy. Never
-use only `NODE_OPTIONS` as the containment mechanism. Stop the test runtime
-while building; do not run the build and test concurrently.
+The build must target `figma-test` in `fresh-context/Dockerfile.figma-test`,
+using the pinned host commit/version and exact integration revision/package
+SHA-256 as its build arguments. No compiler retry may run until actual headroom
+and descendant memory/CPU containment pass. Native compilers are not bounded by
+`NODE_OPTIONS`. Capture memory.events before/after and stop on containment failure.
 
-```sh
-docker buildx build --builder vts-figma-proof --target figma-test --load --tag vts-figma-test:review --file fresh-context/Dockerfile.figma-test --build-arg PAPERCLIP_BUILD_COMMIT=d554c4789ed3930f8a53ac9fdf6503b3187097da --build-arg PAPERCLIP_BUILD_VERSION=2026.916.1 --build-arg FIGMA_INTEGRATION_REVISION=INTEGRATION_COMMIT --build-arg FIGMA_PACKAGE_SHA256=CANDIDATE_SHA256 fresh-context
-docker image inspect vts-figma-test:review --format '{{.Id}} {{json .Config.Labels}}'
-docker buildx stop vts-figma-proof
-```
-
-Replace the two uppercase revision/hash placeholders. Save build exit, elapsed
+Save build exit, elapsed
 time, OOM event changes, image ID, platform, resolved base images and tool versions.
 Set `FIGMA_TEST_IMAGE` to that immutable local `sha256:` ID; pull policy is never.
 Upstream Dockerfile includes moving OS/base/CLI inputs (`@latest`); exact source
@@ -178,7 +175,7 @@ not enable destructive schema-removal options. Revert only to a previously
 tested compatible image/plugin pair. No compatible older pair has passed yet.
 Never roll back schemas or delete associations as a recovery shortcut.
 
-For test B, stop A, use a separate `test-b.env` with project `vts-figma-b`, port
+For test B, stop A, use a separate `test-b.env` with project `vts-figma-test-b`, port
 `4311`, origin `http://localhost:4311`, a new SSH tunnel, and a fresh named volume.
 Repeat installation and managed setup without sharing A's database, vault or
 credentials. A second fresh volume does not itself prove a second successful
@@ -187,7 +184,7 @@ installation; collect the full lifecycle evidence on both.
 After evidence/retention review, `docker compose ... down` removes only that
 project's stopped containers/network and retains its state volume. Do not pass
 `--volumes`, prune, or remove the named volume; links and the vault must survive.
-`docker buildx rm --keep-state vts-figma-proof` removes the dedicated stopped
-builder while retaining its cache. Physical data deletion needs a separate
+Builder cleanup must use its recorded explicit ID after verifying ownership;
+no builder exists from this checkpoint. Physical data deletion needs a separate
 retention decision and is deliberately absent. Restore/restart, native uninstall
 retention, and both clean-instance lifecycles remain acceptance gates.
