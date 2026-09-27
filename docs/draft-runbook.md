@@ -34,7 +34,7 @@ host typecheck, tests, build, hooks and CI remain mandatory; do not bypass them.
 3. Confirm namespace migration, startup and restart persistence; use at least
    three design links across two files/two nodes. Verify labels, order, primary,
    stale revision handling, duplicate normalization and project/company isolation.
-4. Complete the remaining managed connection/catalog implementation. Set up Figma
+4. The preview now includes the managed connection/catalog prerequisite. Set up Figma
    only through Paperclip managed OAuth/setup, using a consenting VTS test identity
    and official remote MCP. Keep all secrets in the managed vault. Record actual
    client metadata, seat/call limits and shared-use behavior, without endorsement
@@ -60,3 +60,12 @@ revision if necessary. Keep `project_designs` and original design URLs. Disablin
 and re-enabling the company plugin preserved links in the isolated RPC test;
 full host upgrade/uninstall behavior is still deferred. Avoid destructive schema
 uninstall options until retention compatibility has been independently reviewed.
+
+## Isolated test placement
+
+See [the hermes01 operator bundle](../operator/README.md) for pinned complete-source
+preparation, non-deploying Compose validation, proposed memory containment, fresh
+volumes, browser/OAuth origin and retention-safe stop/rollback instructions.
+Elena must resolve the remaining host launch/capacity decision before any build
+or runtime start. Source preparation is checked; container and lifecycle proof
+remain unpassed.

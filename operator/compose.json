@@ -1,0 +1,37 @@
+{
+  "name": "${FIGMA_TEST_INSTANCE:?Choose a fresh vts-figma-a or vts-figma-b instance}",
+  "services": {
+    "paperclip": {
+      "image": "${FIGMA_TEST_IMAGE:?Set the reviewed local sha256 image ID}",
+      "pull_policy": "never",
+      "restart": "no",
+      "ports": ["127.0.0.1:${FIGMA_TEST_PORT:?Set a distinct unused host port}:3100"],
+      "mem_limit": "${FIGMA_TEST_MEMORY:?Set operator-approved runtime memory limit}",
+      "memswap_limit": "${FIGMA_TEST_MEMORY:?Set operator-approved runtime memory limit}",
+      "cpus": "${FIGMA_TEST_CPUS:-2}",
+      "pids_limit": 512,
+      "environment": {
+        "PAPERCLIP_HOME": "/paperclip",
+        "PAPERCLIP_INSTANCE_ID": "default",
+        "PAPERCLIP_CONFIG": "/paperclip/instances/default/config.json",
+        "HOST": "0.0.0.0",
+        "PORT": "3100",
+        "SERVE_UI": "true",
+        "PAPERCLIP_DEPLOYMENT_MODE": "authenticated",
+        "PAPERCLIP_DEPLOYMENT_EXPOSURE": "private",
+        "PAPERCLIP_PUBLIC_URL": "${FIGMA_TEST_ORIGIN:?Set the distinct browser and OAuth origin}",
+        "PAPERCLIP_SECRETS_PROVIDER": "local_encrypted",
+        "PAPERCLIP_SECRETS_MASTER_KEY_FILE": "/paperclip/instances/default/secrets/master.key"
+      },
+      "volumes": ["state:/paperclip"],
+      "networks": ["test"],
+      "healthcheck": {
+        "test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],
+        "interval": "15s", "timeout": "5s", "retries": 8, "start_period": "90s"
+      },
+      "stop_grace_period": "60s"
+    }
+  },
+  "volumes": {"state": {}},
+  "networks": {"test": {"driver": "bridge"}}
+}

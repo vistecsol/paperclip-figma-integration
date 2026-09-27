@@ -20,7 +20,8 @@
     "scripts",
     "README.md",
     "dist",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "operator"
   ],
   "exports": {
     "./attachments": "./src/attachments.mjs",

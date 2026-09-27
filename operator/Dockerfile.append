@@ -1,0 +1,13 @@
+
+# Explicit test-image addition; the upstream production stages above are retained.
+FROM production AS figma-test
+ARG FIGMA_INTEGRATION_REVISION
+ARG FIGMA_PACKAGE_SHA256
+LABEL solutions.vistec.figma.integration-revision=$FIGMA_INTEGRATION_REVISION \
+      solutions.vistec.figma.package-sha256=$FIGMA_PACKAGE_SHA256 \
+      solutions.vistec.figma.qualification="engineering-preview-not-release-ready"
+# tsc does not emit the JS-only domain bundle; copy the reviewed runtime asset.
+COPY --chown=node:node --from=build /app/server/src/services/figma-domain.mjs /app/server/dist/services/figma-domain.mjs
+COPY --chown=node:node figma-candidate/package/ /opt/figma-candidate/
+COPY figma-operator/start.mjs /opt/figma-operator/start.mjs
+CMD ["node", "/opt/figma-operator/start.mjs"]
