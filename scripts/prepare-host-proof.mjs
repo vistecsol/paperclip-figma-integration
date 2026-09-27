@@ -9,7 +9,7 @@ const target = join(scratch, process.argv[3] ?? 'host-proof');
 if (existsSync(target)) throw new Error('Use a fresh scratch directory; existing proof tree is preserved');
 const baseline = JSON.parse(readFileSync('host-prerequisite/baseline.json', 'utf8'));
 const policyBaseline = JSON.parse(readFileSync('host-prerequisite/project-policy-baseline.json', 'utf8'));
-for (const file of [...JSON.parse(readFileSync('host-prerequisite/inspection-baseline.json', 'utf8')).files, ...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
+for (const file of [...JSON.parse(readFileSync('host-prerequisite/inspection-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/catalog-baseline.json', 'utf8')).files, ...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
   const bytes = readFileSync(join(source, file.path));
   if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error(`Host source drift: ${file.path}`);
 }
@@ -33,7 +33,7 @@ copyFileSync('test/fixtures/figma-authority-worker.cjs', join(target, 'server/sr
 
 mkdirSync(join(target, 'packages/plugins/sdk'), { recursive: true });
 for (const entry of readdirSync(join(source, 'packages'))) {
-  if (!['plugins', 'adapter-utils'].includes(entry)) symlinkSync(join(source, 'packages', entry), join(target, 'packages', entry));
+  if (!['plugins', 'adapter-utils', 'shared'].includes(entry)) symlinkSync(join(source, 'packages', entry), join(target, 'packages', entry));
 }
 for (const entry of readdirSync(join(source, 'packages/plugins'))) {
   if (entry !== 'sdk') symlinkSync(join(source, 'packages/plugins', entry), join(target, 'packages/plugins', entry));
@@ -62,3 +62,15 @@ if (inspectionPatch.status !== 0) throw new Error('Inspection patch application 
 copyFileSync('host-prerequisite/server/src/services/figma-inspection.ts', join(target, 'server/src/services/figma-inspection.ts'));
 
 copyFileSync('test/host-inspection.test.ts', join(target, 'server/src/__tests__/figma-inspection.test.ts'));
+
+cpSync(join(source, 'packages/shared'), join(target, 'packages/shared'), { recursive: true, dereference: false });
+mkdirSync(join(target, 'scripts'), { recursive: true });
+copyFileSync(join(source, 'scripts/ingest-app-definitions.mjs'), join(target, 'scripts/ingest-app-definitions.mjs'));
+const catalogPatch = spawnSync('git', ['-C', target, 'apply', resolve('host-prerequisite/figma-catalog.patch')], { stdio: 'inherit' });
+if (catalogPatch.status !== 0) throw new Error('Catalog patch application failed');
+copyFileSync('host-prerequisite/figma-app-definition.json', join(target, 'packages/shared/src/app-definitions/figma.json'));
+config = readFileSync(join(target, 'server/vitest.config.ts'), 'utf8');
+config = config.replace('alias: [', `alias: [
+      { find: /^@paperclipai\\/shared$/, replacement: fileURLToPath(new URL('../packages/shared/src/index.ts', import.meta.url)) },`);
+writeFileSync(join(target, 'server/vitest.config.ts'), config);
+copyFileSync('test/host-connector-setup.test.ts', join(target, 'server/src/__tests__/figma-connector-setup.test.ts'));

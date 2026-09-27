@@ -11,6 +11,9 @@ for (const [name,digest] of Object.entries(provenance.prerequisitePatches)) {
 for (const [path, digest] of Object.entries(provenance.hostServiceInputs ?? {})) {
   if (hash(path) !== digest) throw new Error('Host prerequisite source drift: '+path);
 }
+for (const [path, digest] of Object.entries(provenance.hostAssetInputs ?? {})) {
+  if (hash(path) !== digest) throw new Error('Host prerequisite asset drift: '+path);
+}
 for (const [name,digest] of Object.entries(provenance.outputs)) {
   if (hash(`dist/${name}`) !== digest) throw new Error('Built output drift: '+name);
 }

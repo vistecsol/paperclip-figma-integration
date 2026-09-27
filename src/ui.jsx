@@ -16,10 +16,10 @@ export function DesignsTab() {
   const projectId = context.projectId ?? (context.entityType === 'project' ? context.entityId : null);
   // Keyed remount prevents an old project's draft/results leaking into a new tab.
   if (!context.companyId || !projectId) return <p>Select a project to view designs.</p>;
-  return <DesignsPanel key={`${context.companyId}:${projectId}`} projectId={projectId} />;
+  return <DesignsPanel key={`${context.companyId}:${projectId}`} projectId={projectId} companyPrefix={context.companyPrefix} />;
 }
 
-function DesignsPanel({ projectId }) {
+function DesignsPanel({ projectId, companyPrefix }) {
   const query = usePluginData('designs.list', { projectId });
   const mutate = usePluginAction('designs.mutate');
   const verify = usePluginAction('designs.verify');
@@ -52,6 +52,7 @@ function DesignsPanel({ projectId }) {
     <header><h2 className="text-lg font-semibold">Designs</h2>
       <p className="text-sm text-muted-foreground">Attach Figma references for this project. Links do not grant Figma access. Detaching keeps the Figma file.</p>
       <button disabled={busy} onClick={() => query.refresh()}>Reload</button>
+      {companyPrefix && <a className="underline" href={`/${encodeURIComponent(companyPrefix)}/apps`}>Manage Figma connection</a>}
     </header>
     {message && <p role="alert">{message}</p>}
     {!rows.length && <p>No designs attached.</p>}

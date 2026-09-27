@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "slug": "figma",
+  "name": "Figma",
+  "description": "Inspect Figma design context and screenshots through the official remote MCP.",
+  "categories": [
+    "developer"
+  ],
+  "branding": {
+    "logoUrl": "/brands/apps/oauth-generic.svg"
+  },
+  "urlPatterns": [
+    "https://mcp.figma.com/mcp"
+  ],
+  "docsUrl": "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+  "redirectConstraints": "https-or-loopback-http",
+  "methods": [
+    {
+      "key": "mcp-oauth",
+      "transport": "mcp_remote",
+      "auth": "oauth",
+      "ownershipModes": [
+        "dcr"
+      ],
+      "whenToUse": "Connect an authorized Figma account using managed OAuth.",
+      "defaults": {
+        "serverUrl": "https://mcp.figma.com/mcp",
+        "scopesHint": [
+          "mcp:connect"
+        ]
+      },
+      "guidanceMd": "Authorize through Paperclip managed setup. Select eligible employees and explicitly allow reviewed inspection tools only. Design links do not restrict OAuth access. This preview uses Hermes-compatible client metadata; live shared use remains unverified.",
+      "riskTier": "S3",
+      "requiredResourceFilters": [
+        "file",
+        "node"
+      ]
+    }
+  ]
+}

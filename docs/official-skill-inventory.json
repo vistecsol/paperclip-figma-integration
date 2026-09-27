@@ -1,0 +1,92 @@
+{
+  "repository": "https://github.com/figma/mcp-server-guide",
+  "commit": "38308b7bbc676a9e9d57795ad4793fa9682d1644",
+  "treeTruncated": false,
+  "selection": "Only figma-design-to-code is selected. Other skills require separate scope/security review; no automatic whole-package assignment.",
+  "entries": [
+    {
+      "path": "skills/figma-code-connect/SKILL.md",
+      "gitBlob": "867ae9db76a0bdefa0ca233aab3f9b4c7dd006f9",
+      "sha256": "87af3996edb167d6aa3c044cb1bbb6a0d8e2d631c731bb896b1e1e8669640415",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-create-new-file/SKILL.md",
+      "gitBlob": "c677ee36984a5f66683e1bd5a17c7dbb7bfb9668",
+      "sha256": "bb7bc48c487f0ad7e738c23d0685bad5ec0bbbca8f5b5bb6295dc0666cc9ddf1",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-design-to-code/SKILL.md",
+      "gitBlob": "28ce6fede308673cf0c07ff21865d2d59c36b0d4",
+      "sha256": "a6e852421e4db72260b2ca641929b1f84684e5b067aead081e35111f5b5feee4",
+      "selected": true
+    },
+    {
+      "path": "skills/figma-generate-design/SKILL.md",
+      "gitBlob": "40153c37d4a232b711bf7090f6e9283b2676f20f",
+      "sha256": "f4f05f29f69a5b4628d4574359910fea926735af78c5e264a1c4cd16f69315b0",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-generate-diagram/SKILL.md",
+      "gitBlob": "28db4f55e5c2bdc287e68f34ed97235dd4d460a8",
+      "sha256": "7297638dbf2130d1b37bfd85df65d290a4dd0b11a11b54abafcf7d07565922b5",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-generate-library/SKILL.md",
+      "gitBlob": "f4a3a05e4696c2dea4cf901fa0f6b42d24cbfc52",
+      "sha256": "b5277050191d1985f59e162e0acc82523a0a39a8cf614069a3d63753d5990f27",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-generative-plugins/SKILL.md",
+      "gitBlob": "e69ae3edebeee37d517f6dfb1a56fff495c8bad1",
+      "sha256": "b97eb184a1f6b6545f3b8266a4d1a1e29304888904db7daed2864b9fd036b124",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-implement-motion/SKILL.md",
+      "gitBlob": "1732d9bf2bb069eaf3def1f202986e518c2e9fc5",
+      "sha256": "2e26e67284d47c6a74aedf9dca7543f4c8817dafc59a11abb156d4f7feedb2c2",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-shaders/SKILL.md",
+      "gitBlob": "4ff2ec0d9e2d79ea8c01d4cc165aa8782908d514",
+      "sha256": "c7e34c5a4eb316cfe84768cb419fe71b3ce840b29561ecd0f90eb402a72e1adf",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-swiftui/SKILL.md",
+      "gitBlob": "60ca47143059a2e0e358df261f0558de459a0b1e",
+      "sha256": "868c4defe2c0854f5a3e27594d3fa0f20347c86a9b15d103483b7488bfa8affe",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-use-figjam/SKILL.md",
+      "gitBlob": "65fe0ca7d5a15e811f957f0ad50b7a75af92952b",
+      "sha256": "8d566444a1aaf31c122682a5fbe3d6f14c6a844a4e05164cda3de872752cea24",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-use-motion/SKILL.md",
+      "gitBlob": "a1228c948067d198a8d51484d7ec1be1a9f00529",
+      "sha256": "d74fa8c9435a5260f8a61e3a8fbf11c068f940ae3423e9be2efde8b5e785d78c",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-use-slides/SKILL.md",
+      "gitBlob": "4df533d022de9b19b51104693110d179b600053c",
+      "sha256": "0a69a65e686dcc223581afb409a4d31cf318716e2c65cc9c926839a8737e71a4",
+      "selected": false
+    },
+    {
+      "path": "skills/figma-use/SKILL.md",
+      "gitBlob": "c23c0eb033076b080d04a2f3519be5971d780924",
+      "sha256": "ac385b80a05c850b5abc6bcae7c56625c4576318510545453a568aa5f21b8a95",
+      "selected": false
+    }
+  ]
+}

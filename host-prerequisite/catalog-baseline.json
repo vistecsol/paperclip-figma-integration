@@ -1,0 +1,30 @@
+{
+  "hostVersion": "2026.916.1",
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "packages/shared/src/app-definitions.ts",
+      "sha256": "0d3c29ec266f70ddd8161bba6a080091507333ab4f6b2f89c1783c4801a1c260"
+    },
+    {
+      "path": "packages/shared/src/app-definitions.generated.ts",
+      "sha256": "569e43df6e1df899541788609c7bc24c20eb763834d2dfacdb32d0ec3d0a2e61"
+    },
+    {
+      "path": "scripts/ingest-app-definitions.mjs",
+      "sha256": "e99784a16dd5a9f10025e3028c59038bd759fde29e621bd18783b70429a76e62"
+    },
+    {
+      "path": "packages/adapters/codex-local/src/server/skills.ts",
+      "sha256": "8b03eaba5a840fcfa87cc44d69b247f44512f39827b9bb0c901980a5939e8c76"
+    },
+    {
+      "path": "packages/adapters/codex-local/src/server/execute.ts",
+      "sha256": "d2681e44c91cfd3384dbeac9bd6e520a511b53f86b8270c1a93cce8eaeed5571"
+    },
+    {
+      "path": "server/src/services/connection-intents.ts",
+      "sha256": "6b9536778660c9046b94d05ed55e9801022527ee363da7ff32eb8311b0f48380"
+    }
+  ]
+}

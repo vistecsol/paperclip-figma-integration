@@ -4,7 +4,9 @@ import { eq } from 'drizzle-orm';
 import { readPaperclipSkillSyncPreference, writePaperclipSkillSyncPreference } from '@paperclipai/adapter-utils/server-utils';
 import { agentRoutes } from '../routes/agents.js';
 import { errorHandler } from '../middleware/index.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { ensureCodexSkillsInjected } from '../../../packages/adapters/codex-local/src/server/execute.js';
+import { resolveCodexDesiredSkillNames } from '../../../packages/adapters/codex-local/src/server/skills.js';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { beforeAll, afterAll, expect, it } from 'vitest';
@@ -58,6 +60,20 @@ it('native importer pins official bytes and reuses the same row; remote audit is
       const keys = readPaperclipSkillSyncPreference(saved.adapterConfig).desiredSkills;
       expect(keys).toContain(existingKey);
       expect(keys.filter(key => key === skill.key)).toHaveLength(1);
+      // Exercise native materialization into separate employee run directories,
+      // not shared CODEX_HOME and not an external model invocation.
+      const entries = await service.listRuntimeSkillEntries(company.id);
+      const selected = entries.find(entry => entry.key === skill.key)!;
+      expect(selected.sourceStatus).not.toBe('missing');
+      const skillsHome = join(scratch, 'adapter-skills', agent.id);
+      const errors: string[] = [];
+      await ensureCodexSkillsInjected(async (stream, text) => { if (stream === 'stderr') errors.push(text); }, {
+        skillsHome, skillsEntries: entries,
+        desiredSkillNames: resolveCodexDesiredSkillNames(saved.adapterConfig, entries),
+      });
+      expect(errors).toEqual([]);
+      expect(createHash('sha256').update(readFileSync(join(skillsHome, selected.runtimeName, 'SKILL.md'))).digest('hex')).toBe(pin.sha256);
+      expect(readdirSync(skillsHome)).toContain(entries.find(entry => entry.key === existingKey)!.runtimeName);
     }
   }
   const foreign = await db.insert(companies).values({ name: 'Synthetic boundary fixture', issuePrefix: 'FOB' }).returning();

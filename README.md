@@ -12,7 +12,8 @@ host source. Unpatched hosts are rejected. Agent access checks now require a mat
 the native Designs UI is implemented and tested in isolation. Runtime source delivery now has isolated host/database and shared-renderer proof;
 Actual fresh-agent sessions, live managed inspection and onboarding acceptance remain incomplete.
 
-See [inspection checkpoint](docs/inspection-checkpoint.md),
+See [connector setup checkpoint](docs/connector-setup-checkpoint.md),
+[inspection checkpoint](docs/inspection-checkpoint.md),
 [source/onboarding evidence](docs/source-onboarding-checkpoint.md),
 [UI/recovery evidence](docs/ui-recovery-checkpoint.md),
 [RPC/package evidence](docs/rpc-package-checkpoint.md),

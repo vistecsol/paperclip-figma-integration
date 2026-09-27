@@ -28,7 +28,7 @@ const { DesignsTab } = await import(pathToFileURL(output));
 const root = createRoot(document.getElementById('root'));
 let calls = [], refreshes = 0, finish;
 globalThis.figmaUiProof = {
-  context: { companyId: 'company', projectId: 'project' },
+  context: { companyId: 'company', companyPrefix: 'VIS', projectId: 'project' },
   query: { data: { status: 200, body: { revision: 7, connections: [{ id: 'managed', name: 'Managed Figma' }],
     attachments: [{ id: 'design', fileKey: 'File', nodeId: '1:2', url: 'https://www.figma.com/design/File?node-id=1-2',
       label: '<script>not HTML</script>', purpose: 'Reference', primary: false, verification: { state: 'unverified', checkedAt: null } }] } },
@@ -40,6 +40,7 @@ const button = label => [...document.querySelectorAll('button')].find(item => it
 const click = label => act(async () => { button(label).click(); });
 try {
   await render();
+  assert.equal(document.querySelector('a[href="/VIS/apps"]').textContent, 'Manage Figma connection');
   assert.equal(document.querySelectorAll('script').length, 0);
   assert.ok(document.body.textContent.includes('<script>not HTML</script>'));
   await click('Set primary'); await click('Set primary');
@@ -50,9 +51,11 @@ try {
   await click('Detach'); assert.equal(calls.length, 1);
   await click('Cancel'); assert.equal(calls.length, 1);
   await click('Rename / purpose'); assert.ok(document.querySelector('form'));
-  figmaUiProof.context = { companyId: 'other-company', projectId: 'other-project' };
+  figmaUiProof.context = { companyId: 'other-company', companyPrefix: 'OTHER', projectId: 'other-project' };
   figmaUiProof.query.data = { status: 200, body: { revision: 0, attachments: [], connections: [] } };
   await render();
+  assert.equal(document.querySelector('a[href="/VIS/apps"]'), null);
+  assert.ok(document.querySelector('a[href="/OTHER/apps"]'));
   assert.equal(document.querySelector('form'), null); assert.ok(button('Attach design').disabled);
   assert.match(document.body.textContent, /No designs attached/);
   assert.doesNotMatch(document.body.textContent, /not HTML|Reference/);

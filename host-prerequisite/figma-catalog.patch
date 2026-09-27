@@ -1,0 +1,73 @@
+--- a/packages/shared/src/app-definitions.ts
++++ b/packages/shared/src/app-definitions.ts
+@@ -6,6 +6,7 @@
+ export const CONNECTABLE_APP_SLUGS = new Set([
+   "anthropic", "openai", "openrouter", "xai",
+   "agentmail",
++  "figma",
+   ...SELF_SERVE_MCP_CANDIDATES.map((entry) => entry.slug),
+   "zapier",
+   "slack",
+--- a/packages/shared/src/app-definitions.generated.ts
++++ b/packages/shared/src/app-definitions.generated.ts
+@@ -1,3 +1,4 @@
++import figma from "./app-definitions/figma.json" with { type: "json" };
+ import a0 from "./app-definitions/agentmail.json" with { type: "json" };
+ import a1 from "./app-definitions/zapier.json" with { type: "json" };
+ import a2 from "./app-definitions/github.json" with { type: "json" };
+@@ -69,4 +70,4 @@
+ import a68 from "./app-definitions/openrouter.json" with { type: "json" };
+ import a69 from "./app-definitions/xai.json" with { type: "json" };
+ import type { AppDefinition } from "./types/app-definition.js";
+-export const APP_DEFINITIONS=[a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31,a32,a33,a34,a35,a36,a37,a38,a39,a40,a41,a42,a43,a44,a45,a46,a47,a48,a49,a50,a51,a52,a53,a54,a55,a56,a57,a58,a59,a60,a61,a62,a63,a64,a65,a66,a67,a68,a69] as AppDefinition[];
++export const APP_DEFINITIONS=[figma,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31,a32,a33,a34,a35,a36,a37,a38,a39,a40,a41,a42,a43,a44,a45,a46,a47,a48,a49,a50,a51,a52,a53,a54,a55,a56,a57,a58,a59,a60,a61,a62,a63,a64,a65,a66,a67,a68,a69] as AppDefinition[];
+--- a/scripts/ingest-app-definitions.mjs
++++ b/scripts/ingest-app-definitions.mjs
+@@ -1564,6 +1564,47 @@
+     };
+   }),
+ };
++// Approved Figma host prerequisite; generic OAuth artwork until brand review.
++apps.unshift({
++  "schemaVersion": 1,
++  "slug": "figma",
++  "name": "Figma",
++  "description": "Inspect Figma design context and screenshots through the official remote MCP.",
++  "categories": [
++    "developer"
++  ],
++  "branding": {
++    "logoUrl": "/brands/apps/oauth-generic.svg"
++  },
++  "urlPatterns": [
++    "https://mcp.figma.com/mcp"
++  ],
++  "docsUrl": "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
++  "redirectConstraints": "https-or-loopback-http",
++  "methods": [
++    {
++      "key": "mcp-oauth",
++      "transport": "mcp_remote",
++      "auth": "oauth",
++      "ownershipModes": [
++        "dcr"
++      ],
++      "whenToUse": "Connect an authorized Figma account using managed OAuth.",
++      "defaults": {
++        "serverUrl": "https://mcp.figma.com/mcp",
++        "scopesHint": [
++          "mcp:connect"
++        ]
++      },
++      "guidanceMd": "Authorize through Paperclip managed setup. Select eligible employees and explicitly allow reviewed inspection tools only. Design links do not restrict OAuth access. This preview uses Hermes-compatible client metadata; live shared use remains unverified.",
++      "riskTier": "S3",
++      "requiredResourceFilters": [
++        "file",
++        "node"
++      ]
++    }
++  ]
++});
+ for (const app of apps) {
+   validateApp(app);
+   if (parsedCaptures[app.slug] && parsedCaptures[app.slug].length === 0)
