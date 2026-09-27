@@ -55,3 +55,11 @@ and prepares the actual managed login route. No production cleanup, limit change
 purchase or new scope is requested. Full-host/CI, live OAuth/shared-agent,
 protected-runtime, browser, onboarding and both clean-instance lifecycle gates
 remain unpassed. Theo's complete-candidate review remains dependent.
+
+Validation: Compose JSON parsing and `git diff --check` passed. The attempted
+`docker compose -f operator/compose.json config --quiet` could not run because
+this client lacks the Compose plugin (`unknown shorthand flag: 'f'`). Native
+Compose validation is deferred; it is not a configuration pass. No package
+rebuild or previously passed product suite was repeated for this operator-only
+change. Exact-ID inspect confirmed both probe and anonymous volume absent after
+cleanup. No hooks or CI were bypassed.
