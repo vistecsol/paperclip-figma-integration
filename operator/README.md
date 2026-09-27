@@ -72,61 +72,36 @@ verify the project/volume name is unused with `docker compose ls` and
 `docker volume inspect vts-figma-test-a_state` (expected not found for a clean test).
 Existing volume means stop and choose a new authorized name; never clear it.
 
-## 2. Capacity and bounded build — Elena decision required
+## 2. Capacity and bounded compiler trial
 
-A sibling container adds no RAM. The exhausted compiler is not retried in the
-shared agent container. On hermes01 itself, record:
+The 4 GiB / 1 CPU compiler experiment replaces the legacy 8/30 GiB proposal
+checks; it does not establish build minima. See `compiler-trial.md` for the
+exact invocation, prepared-image receipt, refusal behavior and evidence.
+The current placement fails capacity. Do not launch a compiler or image build.
+Elena coordinates capacity; Nadia owns preparation and the one sequential trial.
+
+`preflight.py` now requires explicit memory, reserve, disk-budget and disk-reserve
+parameters. Run on the daemon host against its actual storage filesystem:
 
 ```sh
-python3 operator/preflight.py --phase build --limit-gib 8 --reserve-gib 2 > build-preflight.json
-docker stats --no-stream --format '{{.Name}} {{.MemUsage}} {{.PIDs}}'
-docker info --format '{{.CgroupVersion}} {{.CgroupDriver}}'
+python3 operator/preflight.py --phase compiler --limit-gib 4 --reserve-gib 2 --disk-budget-gib 12 --disk-reserve-gib 2 --disk-path /home/paperclip/.local/share/docker > compiler-preflight.json
 ```
 
-A nonzero preflight means stop. It records MemAvailable, visible ancestor
-limits/events and process RSS without command lines or secrets. An 8 GiB build
-ceiling plus 2 GiB free reserve is a conservative proposal, not a measured
-requirement or reservation. Elena must sequence it with VTS/RTS/system load;
-insufficient capacity requires another approved placement/window, not a larger
-limit on the existing server. Free disk check uses 30 GiB as a preparation
-budget; actual full host build/cache usage is unmeasured.
+A nonzero result means stop. Being inside the agent container always refuses
+host-placement acceptance. A successful observation is neither a reservation nor
+launch authorization. Inspect fresh storage growth between stages, preserving
+at least the selected disk reserve; never prune shared resources to pass.
 
-After an explicit approved window, use a dedicated BuildKit container with a
-hard cgroup ceiling for native compiler descendants, no extra swap allowance,
-and one build step at a time. Docker documents `memory` and `memory-swap` driver
-options at https://docs.docker.com/build/builders/drivers/docker-container/.
-Pin the operator-reviewed BuildKit image digest as `BUILDKIT_IMAGE` before this
-step; that digest and Docker/Buildx versions are still external prerequisites.
-
-The previous Buildx docker-container recipe is withdrawn: it generates a
-`buildx_buildkit_*` container outside the required `vts-figma-test-*` namespace.
-Do not execute that recipe. Before a build, prepare an explicitly named isolated
-builder and verify its ownership, mounts, network and effective descendant
-cgroups. This builder is not provisioned. All test containers, networks and
-volumes must use `vts-figma-test-*` names; labels and exact IDs must be recorded.
-A prefix is necessary but is never sufficient evidence of safe ownership.
-Never exec into or mutate any production container or Compose resource.
-
-The build must target `figma-test` in `fresh-context/Dockerfile.figma-test`,
-using the pinned host commit/version and exact integration revision/package
-SHA-256 as its build arguments. No compiler retry may run until actual headroom
-and descendant memory/CPU containment pass. Native compilers are not bounded by
-`NODE_OPTIONS`. Capture memory.events before/after and stop on containment failure.
-
-Save build exit, elapsed
-time, OOM event changes, image ID, platform, resolved base images and tool versions.
-Set `FIGMA_TEST_IMAGE` to that immutable local `sha256:` ID; pull policy is never.
-Upstream Dockerfile includes moving OS/base/CLI inputs (`@latest`); exact source
-pins alone do not make this host image reproducible. Record resolved versions;
-no bit-for-bit host image claim. npm reproducibility is a separate recorded check.
-No push/publication occurs. Image build is not the required host test/CI pass;
-run the maintained required checks only in the separately approved bounded
-placement and record them separately. Failure leaves release gates unpassed.
+The runner is for a prepared compiler image, not the complete application image.
+The existing `Dockerfile.figma-test` full Rust/UI/server build remains separate
+and unmeasured. No explicit BuildKit builder is provisioned; the withdrawn Buildx
+recipe remains forbidden because its generated names violate the test namespace.
+Do not equate the narrow compiler trial with full host checks, CI or image readiness.
 
 ## 3. Start, bootstrap and managed setup — after launch approval
 
 ```sh
-python3 operator/preflight.py --phase runtime --limit-gib 4 --reserve-gib 2 > runtime-preflight.json
+python3 operator/preflight.py --phase runtime --limit-gib 4 --reserve-gib 2 --disk-budget-gib 12 --disk-reserve-gib 2 --disk-path /home/paperclip/.local/share/docker > runtime-preflight.json
 docker compose --env-file test.env -f operator/compose.json up -d --no-build --pull never
 docker compose --env-file test.env -f operator/compose.json ps
 docker compose --env-file test.env -f operator/compose.json exec paperclip cat /sys/fs/cgroup/memory.max
