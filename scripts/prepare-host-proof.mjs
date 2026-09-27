@@ -9,7 +9,7 @@ const target = join(scratch, process.argv[3] ?? 'host-proof');
 if (existsSync(target)) throw new Error('Use a fresh scratch directory; existing proof tree is preserved');
 const baseline = JSON.parse(readFileSync('host-prerequisite/baseline.json', 'utf8'));
 const policyBaseline = JSON.parse(readFileSync('host-prerequisite/project-policy-baseline.json', 'utf8'));
-for (const file of [...JSON.parse(readFileSync('host-prerequisite/inspection-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/catalog-baseline.json', 'utf8')).files, ...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
+for (const file of [...JSON.parse(readFileSync('host-prerequisite/board-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/inspection-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/catalog-baseline.json', 'utf8')).files, ...baseline.files, ...policyBaseline.files, ...JSON.parse(readFileSync('host-prerequisite/source-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/invocation-baseline.json', 'utf8')).files, ...JSON.parse(readFileSync('host-prerequisite/rpc-baseline.json', 'utf8')).files]) {
   const bytes = readFileSync(join(source, file.path));
   if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error(`Host source drift: ${file.path}`);
 }
@@ -74,3 +74,7 @@ config = config.replace('alias: [', `alias: [
       { find: /^@paperclipai\\/shared$/, replacement: fileURLToPath(new URL('../packages/shared/src/index.ts', import.meta.url)) },`);
 writeFileSync(join(target, 'server/vitest.config.ts'), config);
 copyFileSync('test/host-connector-setup.test.ts', join(target, 'server/src/__tests__/figma-connector-setup.test.ts'));
+
+const boardPatch = spawnSync('git', ['-C', target, 'apply', resolve('host-prerequisite/figma-board-policy.patch')], { stdio: 'inherit' });
+if (boardPatch.status !== 0) throw new Error('Board policy patch application failed');
+copyFileSync('host-prerequisite/server/src/services/board-tool-test-policy.ts', join(target, 'server/src/services/board-tool-test-policy.ts'));

@@ -27,7 +27,7 @@ for (const [i, file] of baseline.files.entries()) {
     updated = 'import { captureFigmaInspector } from "../services/figma-inspection.js";\nimport { captureFigmaApiAuthority, captureFigmaUiAuthority } from "../services/figma-api-authority.js";\n' + original;
     const anchor = '      const result = await bridgeDeps.workerManager.call(\n        plugin.id,\n        "handleApiRequest",';
     updated = replace(updated, anchor, `      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId,
-        captureFigmaInspector(req, match.params.projectId));
+        captureFigmaInspector(req, match.params.projectId, db, req.body?.agentId));
 ${anchor}`);
     for (const method of ['getData', 'performAction']) {
       const body = method === 'getData'
@@ -54,7 +54,7 @@ ${body}
         captureFigmaUiAuthority(input, req.actor, companyId, {
           actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
           userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
-        }, "${method}");
+        }, "${method}", captureFigmaInspector(req, "", db, (body.params as Record<string, unknown> | undefined)?.agentId));
       }
       const result = await bridgeDeps.workerManager.call(plugin.id, "${method}", input);`);
     }

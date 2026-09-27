@@ -24,7 +24,7 @@ export function captureFigmaApiAuthority(
 export function captureFigmaUiAuthority(
   envelope: { key: string; params?: unknown }, actor: Request["actor"],
   companyId: string | null | undefined, apiActor: PluginApiRequestInput["actor"],
-  method: "getData" | "performAction",
+  method: "getData" | "performAction", inspect?: Inspector,
 ): void {
   if (actor.type !== "board" || !companyId) return;
   const params = envelope.params;
@@ -39,7 +39,7 @@ export function captureFigmaUiAuthority(
     query: {}, headers: {}, companyId, actor: apiActor,
     body: envelope.key === "designs.verify" ? { expectedRevision: input.expectedRevision } : input.command ?? null,
   };
-  envelopes.set(envelope, { authority: structuredClone({ actor, companyId, projectId: input.projectId }),
+  envelopes.set(envelope, { inspect, authority: structuredClone({ actor, companyId, projectId: input.projectId }),
     request: structuredClone(request) });
 }
 

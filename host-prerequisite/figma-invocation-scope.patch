@@ -45,7 +45,7 @@
 +        captureFigmaUiAuthority(input, req.actor, companyId, {
 +          actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
 +          userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
-+        }, "getData");
++        }, "getData", captureFigmaInspector(req, "", db, (body.params as Record<string, unknown> | undefined)?.agentId));
 +      }
 +      const result = await bridgeDeps.workerManager.call(plugin.id, "getData", input);
        res.json({ data: result });
@@ -72,7 +72,7 @@
 +        captureFigmaUiAuthority(input, req.actor, companyId, {
 +          actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
 +          userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
-+        }, "performAction");
++        }, "performAction", captureFigmaInspector(req, "", db, (body.params as Record<string, unknown> | undefined)?.agentId));
 +      }
 +      const result = await bridgeDeps.workerManager.call(plugin.id, "performAction", input);
        res.json({ data: result });
@@ -83,7 +83,7 @@
        };
 
 +      captureFigmaApiAuthority(input, req.actor, companyId, match.params.projectId,
-+        captureFigmaInspector(req, match.params.projectId));
++        captureFigmaInspector(req, match.params.projectId, db, req.body?.agentId));
        const result = await bridgeDeps.workerManager.call(
          plugin.id,
          "handleApiRequest",

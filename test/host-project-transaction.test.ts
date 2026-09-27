@@ -186,6 +186,17 @@ it('real worker fixed RPC persists only the captured request and denies foreign 
     captureFigmaApiAuthority(verification, board, companyId, project.id, async () => { inspected++; return { state: 'accessible' }; });
     expect((await handle.call('handleApiRequest', verification as any) as any).status).toBe(409);
     expect(inspected).toBe(1);
+    const uiVerification = { key: 'designs.verify', params: { projectId: project.id,
+      designId: added.body.attachments[0].id, expectedRevision: 3, agentId: 'explicit-employee' },
+      actorContext: { companyId, actorType: 'user', actorId: 'local-board' } };
+    captureFigmaUiAuthority(uiVerification, board, companyId, apiActor, 'performAction', async reference => {
+      expect(reference.connectionId).toBe(connection.id);
+      return { state: 'accessible' };
+    });
+    const boardVerified = await handle.call('performAction', uiVerification) as any;
+    expect(boardVerified.status).toBe(200);
+    expect(boardVerified.body.revision).toBe(4);
+    expect(boardVerified.body.attachments[0].verification.state).toBe('accessible');
     const agentInput = { ...uiList };
     captureFigmaUiAuthority(agentInput, { type: 'agent', agentId: 'unbound-agent' } as any, companyId, apiActor, 'getData');
     expect((await handle.call('getData', agentInput) as any).status).toBe(403);

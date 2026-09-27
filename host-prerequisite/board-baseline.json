@@ -1,0 +1,10 @@
+{
+  "hostVersion": "2026.916.1",
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "server/src/routes/tool-access.ts",
+      "sha256": "336d1584fca9a14d7dcfd0f9f5333057d19800126d6efc4a71a0d5efeb5d185e"
+    }
+  ]
+}

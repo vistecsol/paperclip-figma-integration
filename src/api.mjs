@@ -54,7 +54,8 @@ export function designApi(service) {
         }
         case 'designs.verify': {
           const payload = object(input.body);
-          exactFields(payload, ['expectedRevision']);
+          exactFields(payload, ['expectedRevision', 'agentId']);
+          if (payload.agentId !== undefined) requiredId(payload.agentId, 'agent');
           if (!Number.isSafeInteger(payload.expectedRevision) || payload.expectedRevision < 0) throw new DesignError('revision_required');
           body = await service.verify(request, requiredId(input.params?.designId, 'design'), payload.expectedRevision); break;
         }

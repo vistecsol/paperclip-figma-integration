@@ -1,0 +1,57 @@
+// Extracted unchanged from pinned native tool-access route. Shared by both paths.
+import type { Request } from "express";
+import { agents, type Db } from "@paperclipai/db";
+import { and, eq } from "drizzle-orm";
+import { isAgentStatusAssignableToWork, type PermissionKey } from "@paperclipai/shared";
+import { assertBoard, assertCompanyAccess } from "../routes/authz.js";
+import { forbidden } from "../errors.js";
+import { accessService } from "./access.js";
+export function boardToolTestPolicy(db: Db) {
+  const access = accessService(db);
+  async function assertBoardAnyToolPermission(req: Request, companyId: string, permissionKeys: PermissionKey[]) {
+    assertBoard(req);
+    assertCompanyAccess(req, companyId);
+    if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) return;
+    const userId = req.actor.userId;
+    if (userId) {
+      for (const permissionKey of permissionKeys) {
+        if (await access.hasPermission(companyId, "user", userId, permissionKey)) return;
+      }
+    }
+    throw forbidden(`Missing one of permissions: ${permissionKeys.join(", ")}`);
+  }
+
+  async function assertCanTestAsAgent(req: Request, companyId: string, agentId: string, knownAgent?: { id: string; status: string }) {
+    const agent = knownAgent ?? (await db
+      .select({ id: agents.id, status: agents.status })
+      .from(agents)
+      .where(and(eq(agents.id, agentId), eq(agents.companyId, companyId)))
+      .limit(1))[0];
+    // Admin permission bypasses must not make unassignable agents testable.
+    if (!agent || agent.id !== agentId || !isAgentStatusAssignableToWork(agent.status)) {
+      throw forbidden("This agent is not available for testing");
+    }
+    const decision = await access.decide({
+      actor: req.actor,
+      action: "tasks:assign",
+      resource: {
+        type: "issue",
+        companyId,
+        issueId: null,
+        projectId: null,
+        parentIssueId: null,
+        assigneeAgentId: agentId,
+        assigneeUserId: null,
+      },
+      scope: {
+        assigneeAgentId: agentId,
+        assigneeUserId: null,
+      },
+    });
+    if (decision.allowed) return;
+    throw forbidden(decision.explanation);
+  }
+
+
+  return { assertBoardAnyToolPermission, assertCanTestAsAgent };
+}

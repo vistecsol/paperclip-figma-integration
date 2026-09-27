@@ -30,7 +30,7 @@ let calls = [], refreshes = 0, finish;
 globalThis.figmaUiProof = {
   context: { companyId: 'company', companyPrefix: 'VIS', projectId: 'project' },
   query: { data: { status: 200, body: { revision: 7, connections: [{ id: 'managed', name: 'Managed Figma' }],
-    attachments: [{ id: 'design', fileKey: 'File', nodeId: '1:2', url: 'https://www.figma.com/design/File?node-id=1-2',
+    attachments: [{ id: 'design', connectionId: 'managed', fileKey: 'File', nodeId: '1:2', url: 'https://www.figma.com/design/File?node-id=1-2',
       label: '<script>not HTML</script>', purpose: 'Reference', primary: false, verification: { state: 'unverified', checkedAt: null } }] } },
     refresh: async () => { refreshes++; } },
   action: async (key, params) => { calls.push({ key, params }); return await new Promise(resolve => { finish = resolve; }); },
@@ -50,6 +50,18 @@ try {
   assert.equal(calls.length, 1); assert.equal(refreshes, 1); // no silent stale-command replay
   await click('Detach'); assert.equal(calls.length, 1);
   await click('Cancel'); assert.equal(calls.length, 1);
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async url => { assert.equal(url, '/api/tool-connections/managed/test-agents'); return { ok: true, json: async () => ({ agents: [{ id: 'selected-agent', name: 'Engineer' }] }) }; };
+  await click('Check access');
+  assert.equal(button('Verify selected employee').disabled, true);
+  const selector = document.querySelector('select');
+  await act(async () => { selector.value = 'selected-agent'; selector.dispatchEvent(new window.Event('change', { bubbles: true })); });
+  await click('Verify selected employee');
+  assert.equal(calls[1].key, 'designs.verify');
+  assert.equal(calls[1].params.agentId, 'selected-agent');
+  assert.equal(calls[1].params.expectedRevision, 7);
+  await act(async () => { finish({ status: 200, body: {} }); });
+  globalThis.fetch = previousFetch;
   await click('Rename / purpose'); assert.ok(document.querySelector('form'));
   figmaUiProof.context = { companyId: 'other-company', companyPrefix: 'OTHER', projectId: 'other-project' };
   figmaUiProof.query.data = { status: 200, body: { revision: 0, attachments: [], connections: [] } };
