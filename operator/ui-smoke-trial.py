@@ -31,6 +31,19 @@ deadline = datetime.datetime.fromisoformat(os.environ["VTS_UI_TRIAL_DEADLINE"].r
 def within_window():
     if time.time() >= deadline:
         raise RuntimeError("Coordinated UI trial window expired")
+def apply_admission(result, initial=False):
+    # Preparation gets an extra margin; the immediate build gate is unchanged.
+    required = (1408 + 64 + 1280 + (128 if initial else 0)) * 1024**2
+    result["admissionPhase"] = "before-preparation" if initial else "before-build-or-supervision"
+    result["preparationMarginBytes"] = 128 * 1024**2 if initial else 0
+    result["requiredHeadroomBytes"] = required
+    result["shortfallBytes"] = max(0, required - result["effectiveHeadroomBytes"])
+    if result["shortfallBytes"]:
+        result["decision"] = "skip-heavy-run"
+        result["reasons"].append("Insufficient aggregate headroom including preparation margin" if initial
+                                 else "Insufficient aggregate headroom including supervisor probe")
+    return result
+
 probe = None
 build = None
 try:
@@ -38,8 +51,6 @@ try:
     original = owned(source, False)
     assert original["State"]["Status"] == "exited" and not original["Mounts"]
     assert original["Image"] == image
-    # Only source inputs; never copy credentials, dependency mounts or state.
-    docker("cp", source+":/app/packages/shared/src", str(scratch/"shared-src"))
     probe_code = (root/"operator/ui-capacity.mjs").read_text()
     probe = docker("create", "--name", name+"-probe", *flags,
                    "--network", "none", "--read-only", "--cap-drop", "ALL",
@@ -52,27 +63,23 @@ try:
     record["probeId"] = probe
     owned(probe)
     docker("start", probe)
-    def sample():
+    def sample(initial=False):
         owned(probe)
         result = json.loads(docker("exec", probe, "node", "--input-type=module", "-e", probe_code))
         own = result["cgroups"][0]
         assert own["memory.max"] == "67108864" and own["memory.swap.max"] == "0"
         assert own["cpu.max"] == "25000 100000" and own["pids.max"] == "32"
-        # Include the concurrent 64 MiB supervisor probe in admission.
-        required = (1408 + 64 + 1280) * 1024**2
-        result["requiredHeadroomBytes"] = required
-        result["shortfallBytes"] = max(0, required - result["effectiveHeadroomBytes"])
-        if result["shortfallBytes"]:
-            result["decision"] = "skip-heavy-run"
-            result["reasons"].append("Insufficient aggregate headroom including supervisor probe")
+        apply_admission(result, initial)
         record["samples"].append(result)
         save()
         return result
-    before = sample()
+    before = sample(initial=True)
     if before["decision"] == "skip-heavy-run":
         record["outcome"] = "preflight-refused"
     else:
         within_window()
+        # Only source inputs; no credentials, dependency mounts or state.
+        docker("cp", source+":/app/packages/shared/src", str(scratch/"shared-src"))
         ui_input = scratch/"project-ui"
         ui_input.mkdir()
         for entry in json.loads((root/"host-prerequisite/project-ui-baseline.json").read_text())["files"]:
