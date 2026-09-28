@@ -78,7 +78,61 @@
        res.json({ data: result });
      } catch (err) {
        const bridgeError = mapRpcErrorToBridgeError(err);
-@@ -1907,6 +1917,8 @@
+@@ -1624,16 +1634,20 @@
+     const companyId = assertPluginBridgeScope(req, body?.companyId);
+
+     try {
+-      const result = await bridgeDeps.workerManager.call(
+-        plugin.id,
+-        "getData",
+-        {
++      const input = {
+           key,
+           ...(companyId ? { companyId } : {}),
+           params: body?.params ?? {},
+           renderEnvironment: body?.renderEnvironment ?? null,
+-        },
+-      );
++      };
++      if (plugin.pluginKey === "vistecsol.figma") {
++        const actor = getActorInfo(req);
++        captureFigmaUiAuthority(input, req.actor, companyId, {
++          actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
++          userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
++        }, "getData", captureFigmaInspector(req, "", db, (body?.params as Record<string, unknown> | undefined)?.agentId));
++      }
++      const result = await bridgeDeps.workerManager.call(plugin.id, "getData", input);
+       res.json({ data: result });
+     } catch (err) {
+       const bridgeError = mapRpcErrorToBridgeError(err);
+@@ -1714,16 +1728,20 @@
+     const companyId = assertPluginBridgeScope(req, body?.companyId);
+
+     try {
+-      const result = await bridgeDeps.workerManager.call(
+-        plugin.id,
+-        "performAction",
+-        {
++      const input = {
+           key,
+           params: actionParamsWithAuthorizedCompanyScope(body?.params, companyId),
+           actorContext: performActionActorContext(req, companyId),
+           renderEnvironment: body?.renderEnvironment ?? null,
+-        },
+-      );
++      };
++      if (plugin.pluginKey === "vistecsol.figma") {
++        const actor = getActorInfo(req);
++        captureFigmaUiAuthority(input, req.actor, companyId, {
++          actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
++          userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
++        }, "performAction", captureFigmaInspector(req, "", db, (body?.params as Record<string, unknown> | undefined)?.agentId));
++      }
++      const result = await bridgeDeps.workerManager.call(plugin.id, "performAction", input);
+       res.json({ data: result });
+     } catch (err) {
+       const bridgeError = mapRpcErrorToBridgeError(err);
+@@ -1907,6 +1925,8 @@
          headers: sanitizePluginRequestHeaders(req),
        };
 

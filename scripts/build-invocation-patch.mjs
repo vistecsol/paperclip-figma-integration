@@ -30,23 +30,26 @@ for (const [i, file] of baseline.files.entries()) {
         captureFigmaInspector(req, match.params.projectId, db, req.body?.agentId));
 ${anchor}`);
     for (const method of ['getData', 'performAction']) {
-      const body = method === 'getData'
-        ? `          key: body.key,
+      for (const keyed of [false, true]) {
+        const access = keyed ? 'body?' : 'body';
+        const key = keyed ? 'key' : 'key: body.key';
+        const body = method === 'getData'
+          ? `          ${key},
           ...(companyId ? { companyId } : {}),
-          params: body.params ?? {},
-          renderEnvironment: body.renderEnvironment ?? null,`
-        : `          key: body.key,
-          params: actionParamsWithAuthorizedCompanyScope(body.params, companyId),
+          params: ${access}.params ?? {},
+          renderEnvironment: ${access}.renderEnvironment ?? null,`
+          : `          ${key},
+          params: actionParamsWithAuthorizedCompanyScope(${access}.params, companyId),
           actorContext: performActionActorContext(req, companyId),
-          renderEnvironment: body.renderEnvironment ?? null,`;
-      const anchor = `      const result = await bridgeDeps.workerManager.call(
+          renderEnvironment: ${access}.renderEnvironment ?? null,`;
+        const anchor = `      const result = await bridgeDeps.workerManager.call(
         plugin.id,
         "${method}",
         {
 ${body}
         },
       );`;
-      updated = replace(updated, anchor, `      const input = {
+        updated = replace(updated, anchor, `      const input = {
 ${body}
       };
       if (plugin.pluginKey === "vistecsol.figma") {
@@ -54,9 +57,10 @@ ${body}
         captureFigmaUiAuthority(input, req.actor, companyId, {
           actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId,
           userId: actor.actorType === "user" ? actor.actorId : null, runId: actor.runId,
-        }, "${method}", captureFigmaInspector(req, "", db, (body.params as Record<string, unknown> | undefined)?.agentId));
+        }, "${method}", captureFigmaInspector(req, "", db, (${access}.params as Record<string, unknown> | undefined)?.agentId));
       }
       const result = await bridgeDeps.workerManager.call(plugin.id, "${method}", input);`);
+      }
     }
   }
   const before = join(scratch, `invocation-before-${i}`), after = join(scratch, `invocation-after-${i}`);
