@@ -1,106 +1,42 @@
-# Isolated Figma browser access — 28 September 2026
+# Mac browser access — verified 28 September 2026, 19:24 UTC
 
-The test app is available for your own browser until **04:00 UTC on 28 September
-2026**, unless a safety reserve is breached first. This is a development test,
-not production or release acceptance. Nadia owns the service and follow-up.
+This replaces the expired Hermes handoff. The obsolete login card is withdrawn. Current app is available until **20:30:18 UTC on 28 September**, or earlier memory/disk safety stop. No automatic restart.
 
-## Open your browser
+## Adam: use your existing Mac account
 
-On your own computer, using your existing SSH access to hermes01, run:
+Your unique Mac account named Adam now has verified native instance-administrator access and active membership in **VTS Mac Figma Proof**. Existing membership is preserved. No signup or identity resubmission is needed. This is a different user ID from hermes01.
 
-```sh
-ssh -N -o ExitOnForwardFailure=yes -L 3310:127.0.0.1:3310 hermes01
-```
+Keep or establish the Mac SSH tunnel on your workstation:
 
-Keep that terminal open. If your SSH configuration needs a username, use your
-existing hermes01 SSH alias/account. Open **http://localhost:3310/auth**.
-Keep exactly `localhost:3310` throughout native login and Figma authorization;
-do not substitute another local port or the hermes01 hostname in the browser.
-The app listens on port 3310 and Docker exposes only hermes01 loopback port 3310.
-No public port or production proxy was changed.
+    ssh -N -o ExitOnForwardFailure=yes -L 3310:127.0.0.1:3310 nolan@macbuilder01.skynet.local
 
-Choose native account creation and use your own email and a new test password.
-Do not reuse or request the synthetic test account. Reply to the saved task card
-once signed in, with your chosen display name (no password, cookies or tokens).
-A new account may initially have no companies: that is expected.
-Nadia will identify your new native account and grant access only to the retained
-VTS test company through the native admin company-access API. Nadia will preserve
-any existing memberships and set only the test permissions needed for Connect.
-This avoids distributing bearer invitation links or synthetic credentials.
+If port 3310 is occupied by your old Hermes tunnel, close that old tunnel first. Use your normal SSH authentication; no synthetic test credentials are shared.
 
-After Nadia confirms membership, refresh, choose the VTS test company, open Apps,
-select Figma and use **Add account** (or a fresh native Finish setup action).
-Complete Figma's own login/consent in that browser. Use only your authorized VTS
-test identity. Do not paste OAuth URLs, passwords or tokens into this task.
-A stale setup attempt should be restarted through the native UI, not by reusing
-an old OAuth URL. The callback origin is `http://localhost:3310`, path
-`/api/tools/oauth/callback`; keep the SSH tunnel open until it returns.
-Human consent and the actual workstation tunnel round trip remain untested.
+Refresh/sign into your existing account at http://localhost:3310/auth, select **VTS Mac Figma Proof**, then open:
 
-## Verified in this preparation
+http://localhost:3310/VTS/apps/connect?source=figma&stage=setup&resume=165fc3b9-48c8-4f20-a549-0f7ffe4b339f
 
-- One app-only start, at 01:43:57 UTC; no UI rebuild or Chromium process.
-- Fresh daemon/ancestor headroom at 01:42:41 UTC: 3,313,926,144 bytes,
-  above 3,019,898,880 bytes (2880 MiB = app 1536 + probe 64 + reserve 1280).
-  Complete ancestor hierarchy; no finite ancestor limit reduced headroom.
-  Disk free 5,400,633,344 bytes; 2 GiB reserve retained.
-- App configuration and effective limits: 1536 MiB, zero swap, one CPU,
-  256 PIDs. Observed peak 1,359,106,048 bytes; zero own OOM events at check.
-- Health authenticated/private, bootstrap ready: HTTP 200. Native private
-  synthetic sign-in, company membership, Figma catalog and admin-user access:
-  HTTP 200. Credentials and cookies stayed inside the isolated test app.
-- Patched HTML and all referenced built assets: HTTP 200. Retained catalog
-  chunk contains the official Figma MCP endpoint. UI source was not rebuilt.
-- Callback route rejects anonymous access with 403 and authenticated missing
-  state with 400, as pinned native policy requires. Matching internal/external
-  port and explicit localhost auth origin preserve the tunnel callback URL.
-  This is callback readiness, not a completed OAuth exchange through SSH.
-- Initial HTTP checks occurred before startup was ready and returned connection
-  refused; subsequent readiness checks passed without restarting the app.
-- Previous real browser rendering is retained evidence; this run performs no
-  browser acceptance check. All other release gates remain open.
+This exact native setup route selects Adam's **Figma for the company** draft (`165fc3b9-48c8-4f20-a549-0f7ffe4b339f`), rather than the synthetic operator's personal fixture. Its application page is http://localhost:3310/VTS/apps/app/758d8c54-d7ba-4ea1-83f5-5d25a6c2ad77/permissions. Keep the current Mac account and company selected. Do not use the old personal fixture's Finish setup or Try again button. No new signup, identity submission, or duplicate outcome card is required.
 
-## Bounded service and recovery
+The reported identity denial was real and correct: the failed native start selected personal fixture `50bbf85b-057d-47ca-b45e-a915f97fcbe5`, owned by the synthetic operator. The current native Add account flow can reuse a draft even with `new=1`; an explicit resume target removes that ambiguity for this handoff. The generic selector itself is not patched by this routing correction.
 
-No realized Paperclip execution workspace is assigned, so the explicitly
-approved Docker handoff is used. An imported test-only guard checks host available
-memory and test-volume disk every two seconds. It terminates the server on a
-1280 MiB host-reserve breach, 2 GiB disk-reserve breach, missing evidence, or
-04:00 UTC expiry; it sends SIGTERM and forces exit after ten seconds if needed.
-The verified ancestor limits were unlimited at admission. The app retains its
-hard cgroup limits. No automatic restart, agent timer or capacity polling is set.
-The guard provides sampled protection, not an instantaneous capacity guarantee.
+Adam already created the separate shared-policy draft. Native audit attributes its successful setup operations to Adam, and request logs show connect HTTP 201 followed by OAuth start HTTP 200 at 19:15, 19:17 and 19:20 UTC. No new authorization attempt was made by Nadia. This proves the corrected selection reaches native OAuth handoff; it does not prove completed consent. At inspection the connection remains draft/unchecked, its organization grant has zero credential secret references, and no live Figma retrieval is claimed. Credentials, OAuth state and provider handoff URLs remain inside managed setup.
 
-If access fails, report the non-secret error in the saved task card. Do not
-restart containers yourself or change ports. Nadia verifies the exact owned app,
-its guard reason, fresh headroom and retained state before any separately routed
-recovery. An expired window is not authorization for an automatic restart.
-Closing SSH only closes your tunnel; the app remains bounded by the above guard.
+The exact setup route and health returned HTTP 200 during this diagnosis. The existing deadline and safety stop still apply. The previous screenshot/outcome cards are answered or withdrawn; do not reuse them as pending requests.
 
-For an authorized operator to stop early on the supplied rootless Docker
-connection, first inspect this exact ID and confirm the name and issue label:
+## Verified evidence
 
-```sh
-docker inspect --format '{{.Name}} {{index .Config.Labels "vts.figma.issue"}}' c1e1180a6d74c5e690b8d8bd1cad42a975071c2fd06768025ffc3f89c109d90b
-# Required: /vts-figma-test-ui-f62ac13d VIS-6
-docker stop --time 30 c1e1180a6d74c5e690b8d8bd1cad42a975071c2fd06768025ffc3f89c109d90b
-```
+- Unique Adam account: `3enr8wLy3EcfIz4gFpApkvg7qwO4IZsj`; native admin API readback `isInstanceAdmin:true`; active company `e36aa1e8-e20b-469e-a661-a2ff66d77536`. Membership update preserves all existing memberships; no old Hermes ID reused.
+- Historical synthetic-fixture application ID `e79053b6-912b-48b4-ad36-14756aa96ced` (not Adam’s current setup target). Authenticated gallery contains official Figma MCP OAuth. Direct route HTTP 200 serves exactly the built index. Native admin login and authentication readiness pass. These are API/served-asset checks, not a new Adam browser-session or OAuth pass.
+- Host `2026.916.1 / d554c4789ed3930f8a53ac9fdf6503b3187097da`; installed package/build input `81e2b0a3cdc988d1fc33dd16765b4dede547d3fb`; package SHA-256 `a60b877632c792caeaf37d1c312ce8b7e7330c0afae152a93a1eff335bcc551e`; served index SHA-256 `6f737c016f469c4dd4d73e4339e5fd76a209f6c301b32d82b9f6114745207f70`. Reused passed UI, no rebuild.
+- Fresh daemon/ancestor headroom 7,621,062,656 bytes; complete ancestor evidence; disk free 919,202,578,432 bytes. Admission passed both the probe's reported 3328 MiB comparison and explicit 2880 MiB app gate. Effective app 1536 MiB, zero swap, one CPU, 256 PIDs. Observed peak 1,357,246,464 bytes; zero own OOM events at readback. Full 1280 MiB host and 2 GiB disk reserves enforced by existing guard.
 
-Preserve volume `vts-figma-test-source-8ec3a4a7-state`, isolated network
-`vts-figma-test-source-8ec3a4a7-egress`, built UI and design links. Do not remove
-volumes or use prune, bulk operations, production Compose, or any production
-container action. No Docker socket or production storage is mounted.
+## Lifetime, storage and safe stop
 
-## Provenance
+Owned active container `7458aac464079c99aa780d21196d01314b75445b377f63a4f5452e639efaac27`, name `vts-figma-test-mac-60247ad9-access`; labels issue VIS-6 and run `60247ad9-a4f9-400a-951d-5937c0990602`. Docker AutoRemove=true: deadline/safety stop removes this temporary container. Admission probe also auto-removed. No additional cleanup task or broad cleanup performed.
 
-Host `2026.916.1` / `d554c4789ed3930f8a53ac9fdf6503b3187097da`.
-Dependency image `sha256:a02ac35ac41df911af477422ea0e781cf41d2b2c600c66f0a5ac9d8c63f52c2c`.
-Successful UI build input `b0797eb011509e4ecca427ab3fa4b0610f85ae7f`;
-previous repository HEAD `05f86854775e87af38946619f691e4e5d3be6a5a`.
-App ID as above. Probe `a6fe7545efc7ba1496272b7d3eea95b3d69f54a22205a24499f48c0c14cb80ad`
-is stopped and retained. Its effective limits were 64 MiB/no-swap, 0.25 CPU,
-32 PIDs, no network/mounts, read-only root; zero own OOM events.
+Retained isolated state volume `vts-figma-test-mac-c69805a3-runtime-state` and isolated network `vts-figma-test-mac-c69805a3-runtime-net` were ownership-verified before reuse. Account and design data remain in the named test volume; build/UI assets remain in the Mac job output directory. No production mounts, Docker socket, production actions or cross-company credentials.
 
-Engineering remains incomplete: actual human consent, Designs browser acceptance,
-shared-agent/protected-runtime proof, full-host/CI, onboarding and both clean
-installation/lifecycle gates have not passed. No publication or production change.
+Operator stop: through `/Users/nolan/vts-figma-test/bin/docker-job`, first inspect the exact container and verify both ownership labels, then `docker stop 7458aac464079c99aa780d21196d01314b75445b377f63a4f5452e639efaac27`. Do not remove the named state volume. After expiry or safety stop, report unavailable; Nadia must obtain fresh admission and prepare a newly bounded access session before another link is offered. Do not restart blindly.
+
+Engineering remains incomplete. Consent/shared-agent/protected-runtime, full-host/CI, complete onboarding, exact-revision reproducibility and both clean-instance lifecycle gates remain open.
