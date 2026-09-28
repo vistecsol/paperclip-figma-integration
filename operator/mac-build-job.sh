@@ -8,8 +8,12 @@ image='ghcr.io/paperclipai/paperclip@sha256:4e2e1e59219129a4b687cd54ba439fb7fed0
 name="vts-figma-test-mac-${run:0:8}-native"
 test ! -e integration && test ! -e inputs || { echo "Use a fresh job directory; no replay"; exit 1; }
 mkdir inputs
-git clone integration.bundle integration
-git -C integration checkout --detach "${3:?exact integration revision required}"
+# Prepared on the engineering checkout with Git metadata retained. Native macOS
+# Git may require an unrelated Xcode license; validate exact HEAD inside the
+# bounded Linux builder before compilation instead.
+test -f integration-checkout.tar.gz
+tar -xzf integration-checkout.tar.gz
+test -d integration/.git
 cp mac-build-supervisor.mjs integration/operator/
 tar -xzf patched-inputs.tar.gz -C inputs
 test -z "$(docker ps -q)" || { echo 'Competing containers: stop without mutation'; exit 1; }
