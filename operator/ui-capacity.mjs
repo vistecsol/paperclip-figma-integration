@@ -28,7 +28,9 @@ for (const row of rows.slice(1)) {
 }
 const disk = fs.statfsSync('/');
 const diskFree = disk.bavail * disk.bsize;
-const required = 3328 * 1024 ** 2;
+// Explicit smoke workload selection; old 2048 MiB trial keeps its original gate.
+const smoke = process.env.VTS_UI_SMOKE_1536 === '1';
+const required = (smoke ? 2816 : 3328) * 1024 ** 2;
 const reasons = [];
 if (!complete) reasons.push('Daemon ancestor hierarchy not fully visible; no launch authorization');
 if (headroom < required) reasons.push('Insufficient host/ancestor memory headroom');
