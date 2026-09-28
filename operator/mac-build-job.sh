@@ -23,7 +23,7 @@ own "$probe"
 docker start -a "$probe" > admission.json
 cat admission.json
 test "$(docker inspect -f '{{.State.ExitCode}}' "$probe")" = 0
-build=$(docker create --name "$name-build" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --entrypoint node --network none --memory 1408m --memory-swap 1408m --cpus 1 --pids-limit 128 --security-opt no-new-privileges -e NODE_OPTIONS=--max-old-space-size=896 -e VTS_UI_PREFLIGHT_APPROVED=1 "$image" /app/integration/operator/mac-build-supervisor.mjs)
+build=$(docker create --name "$name-build" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --entrypoint node --network none --memory 1408m --memory-swap 1408m --cpus 1 --pids-limit 128 --security-opt no-new-privileges -e "VTS_INTEGRATION_REVISION=$3" -e NODE_OPTIONS=--max-old-space-size=896 -e VTS_UI_PREFLIGHT_APPROVED=1 "$image" /app/integration/operator/mac-build-supervisor.mjs)
 own "$build"
 docker cp inputs/. "$build:/app"
 docker cp integration "$build:/app/integration"

@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import {spawn} from 'node:child_process';
+import {spawn, execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 const read=p=>fs.readFileSync(p,'utf8').trim();
 for(const [k,v] of Object.entries({'memory.max':'1476395008','memory.swap.max':'0','cpu.max':'100000 100000','pids.max':'128'}))
@@ -11,6 +11,15 @@ const sample=()=> {
  const d=fs.statfsSync('/app');
  return {available,diskFree:d.bavail*d.bsize,peak:read('/sys/fs/cgroup/memory.peak'),events:read('/sys/fs/cgroup/memory.events')};
 };
+// Docker Desktop copy retains the Mac uid. Normalize only this fresh test
+// checkout to the build identity; never disable Git's safe-directory checks.
+const expectedRevision=process.env.VTS_INTEGRATION_REVISION;
+if (!/^[a-f0-9]{40}$/.test(expectedRevision ?? '')) throw Error('Exact integration revision required');
+execFileSync('chown',['-R',`${process.getuid()}:${process.getgid()}`,'/app/integration']);
+const git=args=>execFileSync('git',['-C','/app/integration',...args],{encoding:'utf8'}).trim();
+if(git(['rev-parse','HEAD'])!==expectedRevision) throw Error('Integration revision mismatch');
+git(['diff','--check']);
+console.log(JSON.stringify({event:'git-preflight',revision:expectedRevision}));
 const initial=sample();
 console.log(JSON.stringify({event:'initial',...initial}));
 if(initial.available<2752*1024**2 || initial.diskFree<2*1024**3) throw Error('Admission failed');
