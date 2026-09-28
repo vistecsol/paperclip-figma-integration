@@ -17,11 +17,32 @@ for (const file of baseline.files) {
     const after = `    const compatibility = figmaDcrCompatibility({\n      ...input.endpoints,\n      serverUrl: asRecord(input.connection.config).url,\n    });\n    if (\n      compatibility &&\n      !input.endpoints.tokenEndpointAuthMethodsSupported?.includes(\n        compatibility.tokenEndpointAuthMethod,\n      )\n    ) {\n      throw unprocessable("Figma no longer advertises the required client authentication method", {\n        code: "oauth_figma_client_auth_unsupported",\n      });\n    }\n    const tokenEndpointAuthMethod = compatibility?.tokenEndpointAuthMethod ??\n      selectOAuthDcrTokenEndpointAuthMethod(\n        input.endpoints.tokenEndpointAuthMethodsSupported,\n      );\n\n    const host = new URL(input.redirectUri).host;\n    const requestedMetadata = {\n      client_name: compatibility?.clientName ?? \`Paperclip (\${host})\`,`;
     if (!updated.includes(before)) throw new Error('Registration anchor missing');
     updated = updated.replace(before, after);
+    // Current database authority, locked through secret/grant persistence.
+    // Deleting/updating the role row serializes with this callback transaction.
+    updated = updated.replace('  companyMemberships,', '  companyMemberships,\n  instanceUserRoles,');
+    const callbackAnchor = '      if (!roleCanManage && !explicitManagerGrant) {\n        throw forbidden(\n          "Only a company owner, admin, or member with connection-manager permission can share credentials with the organization.",';
+    if (updated.split(callbackAnchor).length !== 2) throw new Error('Shared callback anchor drift');
+    updated = updated.replace(callbackAnchor, `      const [currentInstanceAdmin] = roleCanManage || explicitManagerGrant
+        ? []
+        : await tx
+            .select({ id: instanceUserRoles.id })
+            .from(instanceUserRoles)
+            .where(and(
+              eq(instanceUserRoles.userId, organizationActorUserId),
+              eq(instanceUserRoles.role, "instance_admin"),
+            ))
+            .limit(1)
+            .for("update");
+      if (!roleCanManage && !explicitManagerGrant && !currentInstanceAdmin) {
+        throw forbidden(
+          "Only a company owner, admin, or member with connection-manager permission can share credentials with the organization.",`);
+
   } else {
-    const addition = readFileSync('host-prerequisite/managed-service-test.inc', 'utf8');
+    const addition = readFileSync('host-prerequisite/managed-service-test.inc', 'utf8') + '\n' + readFileSync('host-prerequisite/callback-authority-test.inc', 'utf8');
     const anchor = '  it("preserves the provider\'s DCR client-auth ordering for Miro token exchange", async () => {';
     if (!updated.includes(anchor)) throw new Error('Test anchor missing');
     updated = updated.replace(anchor, addition + '\n' + anchor);
+    updated = updated.replace('  companyMemberships,', '  companyMemberships,\n  instanceUserRoles,');
   }
   changes.push({ path: file.path, original, updated });
 }
