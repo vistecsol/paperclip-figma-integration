@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """One supervised 1536 MiB smoke build. No automatic retry or cleanup."""
-import json, os, pathlib, subprocess, time
+import datetime, hashlib, json, os, pathlib, subprocess, time
 root = pathlib.Path(__file__).resolve().parent.parent
 scratch = pathlib.Path(os.environ["PAPERCLIP_RUN_SCRATCH_DIR"]) / "ui-smoke"
 scratch.mkdir(exist_ok=True)
@@ -27,9 +27,14 @@ def owned(cid, current=True):
 def save():
     receipt.write_text(json.dumps(record, indent=2) + "\n")
 flags = [v for k, val in labels.items() for v in ("--label", k+"="+val)]
+deadline = datetime.datetime.fromisoformat(os.environ["VTS_UI_TRIAL_DEADLINE"].replace("Z", "+00:00")).timestamp()
+def within_window():
+    if time.time() >= deadline:
+        raise RuntimeError("Coordinated UI trial window expired")
 probe = None
 build = None
 try:
+    within_window()
     original = owned(source, False)
     assert original["State"]["Status"] == "exited" and not original["Mounts"]
     assert original["Image"] == image
@@ -53,6 +58,13 @@ try:
         own = result["cgroups"][0]
         assert own["memory.max"] == "67108864" and own["memory.swap.max"] == "0"
         assert own["cpu.max"] == "25000 100000" and own["pids.max"] == "32"
+        # Include the concurrent 64 MiB supervisor probe in admission.
+        required = (1536 + 64 + 1280) * 1024**2
+        result["requiredHeadroomBytes"] = required
+        result["shortfallBytes"] = max(0, required - result["effectiveHeadroomBytes"])
+        if result["shortfallBytes"]:
+            result["decision"] = "skip-heavy-run"
+            result["reasons"].append("Insufficient aggregate headroom including supervisor probe")
         record["samples"].append(result)
         save()
         return result
@@ -60,6 +72,16 @@ try:
     if before["decision"] == "skip-heavy-run":
         record["outcome"] = "preflight-refused"
     else:
+        within_window()
+        ui_input = scratch/"project-ui"
+        ui_input.mkdir()
+        for entry in json.loads((root/"host-prerequisite/project-ui-baseline.json").read_text())["files"]:
+            target = ui_input/entry["path"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            docker("cp", source+":/app/"+entry["path"], str(target))
+            assert hashlib.sha256(target.read_bytes()).hexdigest() == entry["sha256"], "UI baseline drift"
+        subprocess.run(["git", "apply", str(root/"host-prerequisite/figma-project-ui.patch")],
+                       cwd=ui_input, check=True)
         build = docker("create", "--name", name, *flags, "--network", "none",
                        "--memory", "1536m", "--memory-swap", "1536m", "--cpus", "1",
                        "--pids-limit", "128", "--security-opt", "no-new-privileges",
@@ -72,11 +94,17 @@ try:
         assert not item["Mounts"] and item["HostConfig"]["NetworkMode"] == "none"
         docker("cp", str(scratch/"shared-src")+"/.", build+":/app/packages/shared/src")
         docker("cp", str(root/"operator/ui-smoke-build.mjs"), build+":/ui-smoke-build.mjs")
+        for entry in json.loads((root/"host-prerequisite/project-ui-baseline.json").read_text())["files"]:
+            docker("cp", str(ui_input/entry["path"]), build+":/app/"+entry["path"])
+        docker("cp", str(root/"host-prerequisite/ui/src/components")+"/.",
+               build+":/app/ui/src/components")
+        record["projectUiPatchSha256"] = hashlib.sha256((root/"host-prerequisite/figma-project-ui.patch").read_bytes()).hexdigest()
         # Recheck after preparation, immediately before consuming the single trial.
         before = sample()
         if before["decision"] == "skip-heavy-run":
             record["outcome"] = "preflight-refused-after-copy"
         else:
+            within_window()
             owned(build)
             record["attemptedBuild"] = True
             save()
@@ -88,7 +116,9 @@ try:
                     break
                 observation = sample()
                 reason = None
-                if not observation["completeAncestorEvidence"]:
+                if time.time() >= deadline:
+                    reason = "coordinated-window-expired"
+                elif not observation["completeAncestorEvidence"]:
                     reason = "ancestor-evidence-lost"
                 elif observation["effectiveHeadroomBytes"] < 1280*1024**2:
                     reason = "host-reserve-breached"
