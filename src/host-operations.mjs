@@ -29,7 +29,7 @@ export function hostDesignOperations({ withProject }) {
       return execute(request, true, async ({ store, companyId, projectId, authorizeConnection }) => {
         const before = await store.read(companyId, projectId);
         const after = changeDesigns(before, input);
-        if (input.type === 'add') {
+        if ((input.type === 'add' || input.type === 'rebind')) {
           if (typeof authorizeConnection !== 'function') throw new DesignError('design_access_denied', 403);
           await authorizeConnection(input.connectionId);
         }

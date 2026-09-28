@@ -12,6 +12,7 @@ export const designApiRoutes = [
 }));
 const commandFields = {
   add: ['expectedRevision', 'connectionId', 'url', 'label', 'purpose'],
+  rebind: ['expectedRevision', 'id', 'connectionId'],
   update: ['expectedRevision', 'id', 'label', 'purpose'],
   detach: ['expectedRevision', 'id'],
   primary: ['expectedRevision', 'id'],

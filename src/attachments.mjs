@@ -60,6 +60,14 @@ export function changeDesigns(current, command, options = {}) {
       attachments.push(row);
       break;
     }
+    case 'rebind': {
+      const row = find();
+      const connectionId = requiredId(command.connectionId, 'connection');
+      if (attachments.some(a => a.id !== row.id && key(a) === key({ ...row, connectionId }))) fail('duplicate_design', 409);
+      row.connectionId = connectionId;
+      row.verification = { state: 'unverified', checkedAt: null };
+      break;
+    }
     case 'update': {
       const row = find();
       if (Object.hasOwn(command, 'label')) row.label = text(command.label, 200, 'label');

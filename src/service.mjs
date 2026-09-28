@@ -27,7 +27,7 @@ export function designService(store, bridge) {
       // Validate the command before any connection call, then authorize its binding.
       const before = await store.read(s.companyId, s.projectId);
       const after = changeDesigns(before, command);
-      if (command.type === 'add') await bridge.authorizeConnection({ ...s, connectionId: command.connectionId });
+      if ((command.type === 'add' || command.type === 'rebind')) await bridge.authorizeConnection({ ...s, connectionId: command.connectionId });
       return store.compareAndSwap(s.companyId, s.projectId, before, after);
     },
     async verify(request, id, expectedRevision) {
