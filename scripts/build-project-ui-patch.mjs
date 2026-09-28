@@ -1,0 +1,42 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+const host = process.argv[2] ?? '/app';
+const scratch = process.env.PAPERCLIP_RUN_SCRATCH_DIR;
+if (!scratch) throw new Error('Run scratch required');
+const baseline = JSON.parse(readFileSync('host-prerequisite/project-ui-baseline.json'));
+let patch = '';
+for (const [i, file] of baseline.files.entries()) {
+ const original = readFileSync(join(host, file.path), 'utf8');
+ if (createHash('sha256').update(original).digest('hex') !== file.sha256) throw new Error(`Source drift: ${file.path}`);
+ let updated = original;
+ const replace = (anchor, value) => { if (updated.split(anchor).length !== 2) throw new Error(`Ambiguous anchor in ${file.path}`); updated = updated.replace(anchor, value); };
+ if (file.path.endsWith('NewProjectDialog.tsx')) {
+  updated = 'import { FigmaDesignEditor, saveCreatedDesigns, type DesignDraft } from "./FigmaDesignEditor";\n' + updated;
+  replace('  const [connecting, setConnecting] = useState(false);', '  const [connecting, setConnecting] = useState(false);\n  const [designs, setDesigns] = useState<DesignDraft[]>([]);\n  const createdProject = useRef<Awaited<ReturnType<typeof projectsApi.create>> | null>(null);');
+  replace('    mutationFn: () => projectsApi.create(companyId, { name: name.trim(), status: "planned", repositoryIds: repos.map((repo) => repo.id) }),', `    mutationFn: async () => {
+      const project = createdProject.current ?? await projectsApi.create(companyId, { name: name.trim(), status: "planned", repositoryIds: repos.map((repo) => repo.id) });
+      createdProject.current = project;
+      void client.invalidateQueries({ queryKey: queryKeys.projects.all(companyId) });
+      if (designs.length) {
+        try { await saveCreatedDesigns(companyId, project.id, designs); }
+        catch (error) { throw new Error('Project created; some designs may not be saved. Retry design save here, or close and use Project Configuration. ' + (error instanceof Error ? error.message : '')); }
+      }
+      return project;
+    },`);
+  replace('disabled={create.isPending} onChange={(event) => setName', 'disabled={create.isPending || !!createdProject.current} onChange={(event) => setName');
+  replace('disabled={create.isPending} />\n        </div>', 'disabled={create.isPending || !!createdProject.current} />\n          <FigmaDesignEditor companyId={companyId} selected={designs} onChange={setDesigns} disabled={create.isPending || !!createdProject.current} />\n        </div>');
+  replace('{create.isPending ? "Creating…" : "Create project"}', '{create.isPending ? "Saving…" : createdProject.current ? "Retry design save" : "Create project"}');
+ } else {
+  updated = 'import { ProjectFigmaDesigns } from "./FigmaDesignEditor";\n' + updated;
+  const anchor = '        {repositories ?? <ProjectRepositories key={project.id} project={project} />}';
+  replace(anchor, anchor + '\n        <ProjectFigmaDesigns key={`${project.companyId}:${project.id}`} companyId={project.companyId} projectId={project.id} />');
+ }
+ const before = join(scratch, `project-ui-before-${i}`), after = join(scratch, `project-ui-after-${i}`);
+ writeFileSync(before, original); writeFileSync(after, updated);
+ const result = spawnSync('diff', ['-u', '--label', `a/${file.path}`, '--label', `b/${file.path}`, before, after], { encoding: 'utf8' });
+ if (![0, 1].includes(result.status)) throw new Error('Diff failed');
+ patch += result.stdout.replace(/^ $/gm, '');
+}
+writeFileSync('host-prerequisite/figma-project-ui.patch', patch);

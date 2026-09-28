@@ -83,3 +83,18 @@ host-only API session capture. It requires the exact pinned gateway source in
 `inspection-baseline.json`; `figma-inspection.patch` is applied only to the
 explicit isolated/approved host build. See `docs/inspection-checkpoint.md` for
 agent-session requirements and the unfinished board workflow.
+
+## Project association entry points
+
+`figma-project-ui.patch` places the shared native `FigmaDesignEditor.tsx` in
+Create project and Project Configuration, next to Source repos. Generate with
+`node scripts/build-project-ui-patch.mjs /path/to/pinned-paperclip`; the two
+host inputs must match `project-ui-baseline.json`. The operator preparation
+applies this eighth patch and copies/digest-checks the component from the package.
+This is an explicit host prerequisite, never an installation hook.
+
+Creation keeps the returned project ID across partial association failures and
+reconciles prior adds on retry. Configuration pins the edit's base revision,
+saves through the existing authorized keyed bridge, and requires reload after
+a partial or stale save. Repository mutations remain on their existing path.
+See `docs/project-entrypoints-checkpoint.md` for proof and deferred browser gates.

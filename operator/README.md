@@ -11,7 +11,7 @@ application launch has passed.
 
 Host: Paperclip `2026.916.1`, source
 `d554c4789ed3930f8a53ac9fdf6503b3187097da`, archive digest in
-`source-pin.json`. Seven reviewed host prerequisite patches are applied to a
+`source-pin.json`. Eight reviewed host prerequisite patches are applied to a
 fresh complete source export. This is an explicitly patched host, not an npm
 installer patching production. Integration base: `390237813607907526539753532cde0580ea8bc6`;
 the operator checkpoint records its resulting revision and tarball hash.

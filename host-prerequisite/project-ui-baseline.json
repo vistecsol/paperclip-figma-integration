@@ -1,0 +1,13 @@
+{
+  "commit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "files": [
+    {
+      "path": "ui/src/components/NewProjectDialog.tsx",
+      "sha256": "7fc551a48cad85c34ea3c212963f7cdd0e470283e13b00016d7cfab0d13d7efa"
+    },
+    {
+      "path": "ui/src/components/ProjectProperties.tsx",
+      "sha256": "fa6e3a4f2d5dc5e06b7866d23e3efb1a358bc41903325d1a9814d65b56b41fcc"
+    }
+  ]
+}

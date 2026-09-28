@@ -32,10 +32,13 @@ for (const name of readdirSync(join(root, 'host-prerequisite')).filter(name => n
     if (hash(join(target, entry.path)) !== entry.sha256) throw new Error(`Source drift: ${entry.path}`);
   }
 }
-const patches = ['figma-managed-oauth', 'figma-invocation-scope', 'figma-design-rpc', 'figma-run-sources', 'figma-inspection', 'figma-catalog', 'figma-board-policy'];
+const patches = ['figma-managed-oauth', 'figma-invocation-scope', 'figma-design-rpc', 'figma-run-sources', 'figma-inspection', 'figma-catalog', 'figma-board-policy', 'figma-project-ui'];
 for (const name of patches) run('git', ['-C', target, 'apply', join(root, 'host-prerequisite', `${name}.patch`)]);
 for (const name of readdirSync(join(root, 'host-prerequisite/server/src/services'))) {
   copyFileSync(join(root, 'host-prerequisite/server/src/services', name), join(target, 'server/src/services', name));
+}
+for (const name of readdirSync(join(root, 'host-prerequisite/ui/src/components'))) {
+  copyFileSync(join(root, 'host-prerequisite/ui/src/components', name), join(target, 'ui/src/components', name));
 }
 copyFileSync(join(root, 'host-prerequisite/figma-app-definition.json'), join(target, 'packages/shared/src/app-definitions/figma.json'));
 mkdirSync(join(target, 'figma-candidate'));
@@ -49,6 +52,10 @@ for (const name of patches) {
 for (const name of readdirSync(join(root, 'host-prerequisite/server/src/services'))) {
   const path = `host-prerequisite/server/src/services/${name}`;
   if (hash(join(packed, path)) !== hash(join(root, path))) throw new Error(`Candidate service mismatch: ${path}`);
+}
+for (const name of readdirSync(join(root, 'host-prerequisite/ui/src/components'))) {
+  const path = `host-prerequisite/ui/src/components/${name}`;
+  if (hash(join(packed, path)) !== hash(join(root, path))) throw new Error(`Candidate UI mismatch: ${path}`);
 }
 for (const path of ['host-prerequisite/figma-app-definition.json', 'operator/start.mjs']) {
   if (hash(join(packed, path)) !== hash(join(root, path))) throw new Error(`Candidate asset mismatch: ${path}`);
