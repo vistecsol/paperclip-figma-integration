@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One supervised 1536 MiB smoke build. No automatic retry or cleanup."""
+"""One supervised 1408 MiB direct-icon smoke build. No automatic retry or cleanup."""
 import datetime, hashlib, json, os, pathlib, subprocess, time
 root = pathlib.Path(__file__).resolve().parent.parent
 scratch = pathlib.Path(os.environ["PAPERCLIP_RUN_SCRATCH_DIR"]) / "ui-smoke"
@@ -46,7 +46,7 @@ try:
                    "--security-opt", "no-new-privileges", "--user", "node",
                    "--cgroupns", "host", "--memory", "64m", "--memory-swap", "64m",
                    "--cpus", "0.25", "--pids-limit", "32",
-                   "-e", "VTS_UI_SMOKE_1536=1", "--entrypoint", "node", image,
+                   "-e", "VTS_UI_DIRECT_ICONS_1408=1", "--entrypoint", "node", image,
                    "--input-type=module", "-e",
                    "setInterval(()=>{},1000);")
     record["probeId"] = probe
@@ -59,7 +59,7 @@ try:
         assert own["memory.max"] == "67108864" and own["memory.swap.max"] == "0"
         assert own["cpu.max"] == "25000 100000" and own["pids.max"] == "32"
         # Include the concurrent 64 MiB supervisor probe in admission.
-        required = (1536 + 64 + 1280) * 1024**2
+        required = (1408 + 64 + 1280) * 1024**2
         result["requiredHeadroomBytes"] = required
         result["shortfallBytes"] = max(0, required - result["effectiveHeadroomBytes"])
         if result["shortfallBytes"]:
@@ -83,10 +83,10 @@ try:
         subprocess.run(["git", "apply", str(root/"host-prerequisite/figma-project-ui.patch")],
                        cwd=ui_input, check=True)
         build = docker("create", "--name", name, *flags, "--network", "none",
-                       "--memory", "1536m", "--memory-swap", "1536m", "--cpus", "1",
+                       "--memory", "1408m", "--memory-swap", "1408m", "--cpus", "1",
                        "--pids-limit", "128", "--security-opt", "no-new-privileges",
                        "--cap-drop", "ALL", "--user", "node",
-                       "-e", "NODE_OPTIONS=--max-old-space-size=1024",
+                       "-e", "NODE_OPTIONS=--max-old-space-size=896",
                        "-e", "RAYON_NUM_THREADS=1", "-e", "VTS_UI_PREFLIGHT_APPROVED=1",
                        "--entrypoint", "node", image, "/ui-smoke-build.mjs")
         record["buildId"] = build
@@ -94,6 +94,7 @@ try:
         assert not item["Mounts"] and item["HostConfig"]["NetworkMode"] == "none"
         docker("cp", str(scratch/"shared-src")+"/.", build+":/app/packages/shared/src")
         docker("cp", str(root/"operator/ui-smoke-build.mjs"), build+":/ui-smoke-build.mjs")
+        docker("cp", str(root/"operator/ui-icon-imports.mjs"), build+":/ui-icon-imports.mjs")
         for entry in json.loads((root/"host-prerequisite/project-ui-baseline.json").read_text())["files"]:
             docker("cp", str(ui_input/entry["path"]), build+":/app/"+entry["path"])
         docker("cp", str(root/"host-prerequisite/ui/src/components")+"/.",

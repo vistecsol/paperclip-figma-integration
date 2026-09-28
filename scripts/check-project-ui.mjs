@@ -33,7 +33,7 @@ export const Button = ({variant,size,children,...props}) => React.createElement(
 export const Dialog = ({open,children}) => open ? React.createElement('div',null,children) : null;
 export const DialogContent = ({children}) => React.createElement('div',null,children);
 export const DialogTitle = ({children}) => React.createElement('h2',null,children);
-export const Figma = () => null; export const Plus = Figma; export const X = Figma; export const Folder = Figma;
+export const Figma = () => null; export const FileImage = Figma; export const Plus = Figma; export const X = Figma; export const Folder = Figma;
 export const ConnectionSetupFlow = () => React.createElement('p',null,'Native connection setup');
 export const repositoryOptionsKey = id => ['repos',id];
 export const ProjectRepositoryInput = ({onChange,disabled}) => React.createElement('button',{type:'button',disabled,onClick:()=>onChange([{id:'github-repo'}])},'Select GitHub repo');

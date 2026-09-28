@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, X, Figma } from "lucide-react";
+import { Plus, X, FileImage } from "lucide-react";
 import { Button } from "./ui/button";
 import { ConnectionSetupFlow } from "@/features/connections/ConnectionSetupFlow";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
@@ -62,7 +62,7 @@ export function FigmaDesignEditor({ companyId, selected, onChange, disabled = fa
   return <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-3 py-4">
     <div className="flex items-baseline gap-2"><span className="text-sm font-medium">Figma designs</span><span className="text-xs text-muted-foreground">optional</span></div>
     {selected.map((row, index) => <div key={row.id ?? `${row.connectionId}:${row.url}`} className="flex min-w-0 flex-col gap-2 rounded-md border border-border px-3 py-2">
-      <div className="flex items-center gap-3"><Figma className="size-4 shrink-0 text-muted-foreground" /><a className="min-w-0 flex-1 truncate text-sm font-medium" href={row.url} target="_blank" rel="noopener noreferrer">{row.label || row.url}</a><Button type="button" variant="ghost" size="icon-sm" aria-label={`Detach ${row.label || row.url}`} onClick={() => onChange(selected.filter((_, i) => i !== index))}><X className="size-4" /></Button></div>
+      <div className="flex items-center gap-3"><FileImage className="size-4 shrink-0 text-muted-foreground" /><a className="min-w-0 flex-1 truncate text-sm font-medium" href={row.url} target="_blank" rel="noopener noreferrer">{row.label || row.url}</a><Button type="button" variant="ghost" size="icon-sm" aria-label={`Detach ${row.label || row.url}`} onClick={() => onChange(selected.filter((_, i) => i !== index))}><X className="size-4" /></Button></div>
       <label className="text-xs">Label<input className="block w-full rounded border px-2 py-1" maxLength={200} value={row.label} onChange={event => onChange(selected.map((item, i) => i === index ? { ...item, label: event.target.value } : item))} /></label>
       <label className="text-xs">Purpose<input className="block w-full rounded border px-2 py-1" maxLength={1000} value={row.purpose} onChange={event => onChange(selected.map((item, i) => i === index ? { ...item, purpose: event.target.value } : item))} /></label>
       <label className="text-xs"><input type="checkbox" checked={!!row.primary} onChange={event => onChange(selected.map((item, i) => ({ ...item, primary: i === index && event.target.checked })))} /> Primary design system</label>
