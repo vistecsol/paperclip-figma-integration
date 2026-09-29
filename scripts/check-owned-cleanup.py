@@ -16,10 +16,10 @@ esac
 """)
  (p/'docker').chmod(0o755)
  for actual,expected in [('proof',7),('foreign',1)]:
-  log=p/actual
+  log=p/(actual+'.log')
   env={**os.environ,'PATH':d+':'+os.environ['PATH'],'CALLS':str(log),'ACTUAL_RUN':actual}
-  r=subprocess.run(['bash','-c','run=proof; source "$1"; register_owned exact-id; exit 7','test',str(root/'operator/mac-owned-cleanup.sh')],cwd=d,env=env,capture_output=True)
-  assert r.returncode==expected,(r.returncode,r.stderr)
+  r=subprocess.run(['bash','-c','unset -f docker; run=proof; source "$1"; register_owned exact-id; exit 7','test',str(root/'operator/mac-owned-cleanup.sh')],cwd=d,env=env,capture_output=True)
+  assert r.returncode==expected,(r.returncode,r.stderr,log.read_text() if log.exists() else 'no fake calls',subprocess.run([str(p/'docker'),'inspect','-f','Labels','exact-id'],env=env,capture_output=True).stderr)
   calls=log.read_text()
   assert ('stop --time 15 exact-id' in calls)==(actual=='proof')
   assert ('rm exact-id' in calls)==(actual=='proof')
