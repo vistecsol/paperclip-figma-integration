@@ -1,7 +1,7 @@
 // Fresh, isolated, credential-free qualification instance only. No provider invocation.
 // A failed prerequisite ends the coordinated attempt; do not rerun against partial state.
 import fs from 'node:fs';
-import {seedDraftPair,assertDraftPair,selectorOrders} from './selector-fixtures.mjs';
+import {seedDraftPair,assertDraftPair,selectorOrders,connectionRows} from './selector-fixtures.mjs';
 import {beforeMutation} from './qualification-mutation-guard.mjs';
 import {lookup} from 'node:dns/promises';
 import {validateFreshMapping,validateMappingEvidence,hostname} from './qualification-dns.mjs';
@@ -65,7 +65,7 @@ try{
   const fixture={order,companyId:scope.id,issuePrefix:scope.issuePrefix,connectionId:pair.shared.id,
    applicationId:pair.shared.applicationId,foreignConnectionId:pair.foreign.id,
    ownerUserId:auth.user.id,foreignUserId:foreignAuth.user.id};
-  assertDraftPair(await req('/api/companies/'+scope.id+'/tools/connections'),fixture);
+  assertDraftPair(connectionRows(await req('/api/companies/'+scope.id+'/tools/connections')),fixture);
   selectorCases.push(fixture);
  }
  const connection={id:selectorCases[0].connectionId,applicationId:selectorCases[0].applicationId};

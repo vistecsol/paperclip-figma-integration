@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict';
+// Native GET /tools/connections returns an object envelope; retain its exact order.
+export function connectionRows(body) {
+ assert.ok(body && !Array.isArray(body) && Array.isArray(body.connections),
+  'Native connections response must contain a connections array');
+ return body.connections;
+}
 export const selectorOrders=['foreign-first','shared-first'];
 export function draftPayload({kind,applicationId}) {
  assert.ok(['shared','foreign'].includes(kind));

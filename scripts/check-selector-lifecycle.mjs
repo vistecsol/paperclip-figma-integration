@@ -30,7 +30,7 @@ assert.equal((await exercise()).preserved,true);
 await assert.rejects(exercise(true));
 console.log('Offline assertion contracts passed; no browser/native lifecycle execution claimed.');
 
-const {seedDraftPair,assertDraftPair,selectorOrders}=await import('../operator/selector-fixtures.mjs');
+const {seedDraftPair,assertDraftPair,selectorOrders,connectionRows}=await import('../operator/selector-fixtures.mjs');
 const {assertRenderedIdentity}=await import('../operator/qualification-selector.mjs');
 for(const order of selectorOrders){
  const writes=[];
@@ -42,7 +42,11 @@ for(const order of selectorOrders){
  }});
  const rows=order==='foreign-first'?[pair.foreign,pair.shared]:[pair.shared,pair.foreign];
  const state={order,companyId:'c',applicationId:'app',connectionId:'shared',foreignConnectionId:'foreign',ownerUserId:'owner',foreignUserId:'foreign'};
- assertDraftPair(rows,state);
+ const envelope={connections:rows};
+ assert.equal(connectionRows(envelope),rows,'Unwrap without sorting or copying');
+ assertDraftPair(connectionRows(envelope),state);
+ for(const malformed of [rows,{},null,{connections:{}},{connections:null}])
+  assert.throws(()=>connectionRows(malformed));
  assert.throws(()=>assertDraftPair([...rows].reverse(),state));
  assert.throws(()=>assertDraftPair(rows.map(x=>x.id==='foreign'?{...x,createdByUserId:'owner'}:x),state));
 }
