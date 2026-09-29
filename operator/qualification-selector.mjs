@@ -63,10 +63,19 @@ export function assertRenderedIdentity({mode,text,selectedAudience,names}) {
 }
 export async function captureRenderedIdentity(page,{mode,names}) {
  const text=await page.locator('body').innerText();
- const selected=page.getByRole('radio',{name:'Any human in the company',exact:true});
- const selectedAudience=await selected.count() && await selected.getAttribute('aria-checked')==='true'
-  ?'Any human in the company'
-  :await page.getByText('Any human in the company',{exact:true}).isVisible().catch(()=>false)
-   && await page.getByRole('radio').count()===0?'Any human in the company':null;
+ // Explicit setup has its own identity region. Reconnect also renders audience
+ // controls, so an unscoped exact-text lookup can match twice and fail strictly.
+ let selectedAudience=null;
+ if(mode==='new') {
+  const selected=page.getByRole('radio',{name:'Any human in the company',exact:true});
+  if(await selected.count()===1 && await selected.isVisible()
+    && await selected.getAttribute('aria-checked')==='true')selectedAudience='Any human in the company';
+ } else {
+  const identity=page.locator('[aria-label="Selected connection"]');
+  assert.equal(await identity.count(),1,'Require one rendered selected identity region');
+  assert.ok(await identity.isVisible(),'Selected identity is hidden');
+  assert.ok(await identity.getByText(names.shared,{exact:true}).isVisible(),'Selected name missing in identity region');
+  if(await identity.getByText('Any human in the company',{exact:true}).isVisible())selectedAudience='Any human in the company';
+ }
  return assertRenderedIdentity({mode,text,selectedAudience,names});
 }
