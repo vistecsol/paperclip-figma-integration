@@ -20,6 +20,8 @@ const git=args=>execFileSync('git',['-C','/app/integration',...args],{encoding:'
 if(git(['rev-parse','HEAD'])!==expectedRevision) throw Error('Integration revision mismatch');
 git(['diff','--check']);
 console.log(JSON.stringify({event:'git-preflight',revision:expectedRevision}));
+const deadline=Date.parse(process.env.VTS_QUALIFICATION_DEADLINE ?? '');
+if(!Number.isFinite(deadline) || Date.now()+5*60*1000>=deadline) throw Error('Insufficient bounded build time');
 const initial=sample();
 console.log(JSON.stringify({event:'initial',...initial}));
 if(initial.available<2752*1024**2 || initial.diskFree<2*1024**3) throw Error('Admission failed');
@@ -34,6 +36,6 @@ node operator/ui-smoke-build.mjs
 `],{stdio:'inherit',detached:true});
 let stopped=false;
 const stop=reason=>{ if(stopped)return; stopped=true;console.error(reason);process.kill(-child.pid,'SIGTERM');setTimeout(()=>{try{process.kill(-child.pid,'SIGKILL');}catch{}},5000).unref();};
-const interval=setInterval(()=>{const s=sample(); if(s.available<1280*1024**2||s.diskFree<2*1024**3)stop('Reserve breached');},1000);
+const interval=setInterval(()=>{const s=sample(); if(Date.now()>=deadline)stop('Qualification teardown deadline'); if(s.available<1280*1024**2||s.diskFree<2*1024**3)stop('Reserve breached');},1000);
 const timeout=setTimeout(()=>stop('20 minute bound expired'),20*60*1000);
 child.on('exit',(code,signal)=>{clearInterval(interval);clearTimeout(timeout);console.log(JSON.stringify({event:'terminal',code,signal,...sample()}));process.exitCode=stopped?2:code??1;});
