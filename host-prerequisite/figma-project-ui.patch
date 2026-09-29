@@ -77,3 +77,106 @@
    const matchingApplicationIds = new Set(
      applications
        .filter((application) =>
+@@ -470,6 +472,16 @@
+   }) ?? null;
+ }
+
++type SelectedSetupIdentity = { name: string; audience: string };
++function selectedFigmaSetupIdentity(connection: ToolConnection | null): SelectedSetupIdentity | undefined {
++  if (!connection || connection.config?.sourceTemplateKey !== "figma") return undefined;
++  const audience = connection.credentialPolicy === "shared" ? "Any human in the company"
++    : connection.credentialPolicy === "per_user" ? "Just me"
++    : connection.credentialPolicy === "per_agent" ? "A dedicated account for an agent"
++    : "Unknown audience";
++  return { name: connection.name, audience };
++}
++
+ export type ConnectionSetupCompletion =
+   | { connectionId: string; resolvedByCallback?: false }
+   /** OAuth callbacks finalize server-side before notifying their opener. */
+@@ -1103,6 +1115,8 @@
+     [connectionsQuery.data, resumeConnectionId],
+   );
+   const identityConnection = resumeConnection ?? reconnectConnection;
++  // Display only the explicitly selected, native-fetched identity. Never a draft fallback.
++  const selectedSetupIdentity = selectedFigmaSetupIdentity(identityConnection);
+   const reconnectGrantKind: ConnectionGrantKind | null = identityConnection
+     ? identityConnection.credentialPolicy === "per_user"
+       ? "user"
+@@ -1893,6 +1907,7 @@
+     return (
+       <OAuthConnectStateScreen
+         entry={automaticOAuthEntry}
++        selectedSetupIdentity={selectedSetupIdentity}
+         resuming={Boolean(resumeConnectionId)}
+         phase={oauthPhase}
+         error={oauthError}
+@@ -1983,6 +1998,7 @@
+   if (genericOAuthPending && !entry && linkUrl && step === "key") {
+     return (
+       <OAuthConnectStateScreen
++        selectedSetupIdentity={selectedSetupIdentity}
+         identity={{
+           name: linkName.trim() || endpointHost(linkUrl) || "this server",
+           unverifiedHost: endpointHost(linkUrl),
+@@ -2094,6 +2110,7 @@
+       {step !== "success" && (
+         !(byoOnly && step === "gallery") && (
+           <StepHeader
++            selectedSetupIdentity={selectedSetupIdentity}
+             subtitle={
+               step === "gallery"
+                 ? vercelConnectMode
+@@ -2418,6 +2435,7 @@
+   activeIndex,
+   labels,
+   appIdentity,
++  selectedSetupIdentity,
+   unverifiedHost,
+   onCancel,
+ }: {
+@@ -2426,6 +2444,7 @@
+   activeIndex: number;
+   labels: string[];
+   appIdentity?: { name: string; logoUrl: string | null; darkLogoUrl?: string | null };
++  selectedSetupIdentity?: SelectedSetupIdentity;
+   /**
+    * Host of an unknown remote MCP server. Present for the whole generic flow so
+    * the operator can see whose server they are configuring at every step, not
+@@ -2446,6 +2465,12 @@
+               {appIdentity ? `Connect ${appIdentity.name}` : "Connect your own MCP server"}
+             </h1>
+             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
++            {selectedSetupIdentity ? (
++              <div className="mt-2 text-sm" aria-label="Selected connection">
++                <p className="font-medium break-words">{selectedSetupIdentity.name}</p>
++                <p className="text-muted-foreground">{selectedSetupIdentity.audience}</p>
++              </div>
++            ) : null}
+             {unverifiedHost ? <UnverifiedServerBadge host={unverifiedHost} className="mt-2" /> : null}
+           </div>
+         </div>
+@@ -2473,6 +2498,7 @@
+ export function OAuthConnectStateScreen({
+   entry,
+   identity,
++  selectedSetupIdentity,
+   resuming = false,
+   phase,
+   error,
+@@ -2488,6 +2514,7 @@
+   entry?: AppDefinition | null;
+   /** Identity for an unknown remote MCP server: its own name plus its host. */
+   identity?: { name: string; unverifiedHost: string | null };
++  selectedSetupIdentity?: SelectedSetupIdentity;
+   /** This screen is continuing a durable draft rather than creating a new one. */
+   resuming?: boolean;
+   phase: OAuthConnectPhase;
+@@ -2537,6 +2564,7 @@
+   return (
+     <div className="max-w-5xl">
+       <StepHeader
++        selectedSetupIdentity={selectedSetupIdentity}
+         subtitle="Secure MCP sign-in"
+         step="key"
+         activeIndex={1}

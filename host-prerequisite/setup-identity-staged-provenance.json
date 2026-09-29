@@ -1,0 +1,27 @@
+{
+  "status": "changed-source-unbuilt",
+  "hostVersion": "2026.916.1",
+  "hostCommit": "d554c4789ed3930f8a53ac9fdf6503b3187097da",
+  "baseline": {
+    "path": "ui/src/features/connections/ConnectionSetupFlow.tsx",
+    "sha256": "b6161ab826a5601884c742d5ccae4b7c347b8af0e5c37decfb81eef63b7d61c2"
+  },
+  "patchedSource": {
+    "path": "ui/src/features/connections/ConnectionSetupFlow.tsx",
+    "sha256": "56e98332d6fea393dd8a77341afd7368e48564642a766459e4bdbf38dbc93e06"
+  },
+  "stagedInputs": {
+    "scripts/build-project-ui-patch.mjs": "ee5b8687cfe1e585962016e57b093ba001984734c0c1050e26844958b085aa2a",
+    "host-prerequisite/project-ui-baseline.json": "168e15ac8cdc71c9c2a6bc94752e0c233fe07b20b1a501adbd05b7169fb568db",
+    "host-prerequisite/figma-project-ui.patch": "e5f90080dbc30a58e036078a62ea8d8b8f461c3aded9cbb097b0e7d9523648bc"
+  },
+  "unchangedOutputs": {
+    "dist/build-provenance.json": "b3c747e585180d85a5668aea717d41610c556f1e7ae33759a4ef5ace9a7fedb8",
+    "dist/ui/index.js": "7c107e86ccb5dd4e9e4dd0ebc7c9a8e355820ae0db1eab66a30c54e68c30f9a0",
+    "dist/worker.mjs": "be02405995e537b34bf4587e5ec0d2a4b74d2d3dd698ff3b80ad4cf51846b894",
+    "dist/manifest.mjs": "ba8f7f842d0b8854664bf897bbb7ae59da4b95c15a0565a4d93f0858db7829de"
+  },
+  "frozenPreviewSha256": "2db67196528809aeb3a675a988672bb6b3dd841f890980d8e45c789d7f1749e5",
+  "priorDiagnosticExportEntries": 482,
+  "qualification": "Prior exports do not include this display change. Rebuild and installed browser checks required; no runtime authorization."
+}

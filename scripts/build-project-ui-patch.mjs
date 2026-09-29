@@ -32,6 +32,35 @@ for (const [i, file] of baseline.files.entries()) {
   replace('  if (!sourceSlug) return null;', `  // Figma setup must never silently adopt a different saved identity.
   // Explicit resume/reconnect is resolved separately and remains server-authorized.
   if (!sourceSlug || sourceSlug === "figma") return null;`);
+  replace('  const identityConnection = resumeConnection ?? reconnectConnection;', `  const identityConnection = resumeConnection ?? reconnectConnection;
+  // Display only the explicitly selected, native-fetched identity. Never a draft fallback.
+  const selectedSetupIdentity = selectedFigmaSetupIdentity(identityConnection);`);
+  replace('export type ConnectionSetupCompletion', `type SelectedSetupIdentity = { name: string; audience: string };
+function selectedFigmaSetupIdentity(connection: ToolConnection | null): SelectedSetupIdentity | undefined {
+  if (!connection || connection.config?.sourceTemplateKey !== "figma") return undefined;
+  const audience = connection.credentialPolicy === "shared" ? "Any human in the company"
+    : connection.credentialPolicy === "per_user" ? "Just me"
+    : connection.credentialPolicy === "per_agent" ? "A dedicated account for an agent"
+    : "Unknown audience";
+  return { name: connection.name, audience };
+}
+
+export type ConnectionSetupCompletion`);
+  replace('        entry={automaticOAuthEntry}', '        entry={automaticOAuthEntry}\n        selectedSetupIdentity={selectedSetupIdentity}');
+  replace('        identity={{', '        selectedSetupIdentity={selectedSetupIdentity}\n        identity={{');
+  replace('          <StepHeader\n            subtitle={', '          <StepHeader\n            selectedSetupIdentity={selectedSetupIdentity}\n            subtitle={');
+  replace('  appIdentity,\n  unverifiedHost,', '  appIdentity,\n  selectedSetupIdentity,\n  unverifiedHost,');
+  replace('  appIdentity?: { name: string; logoUrl: string | null; darkLogoUrl?: string | null };', '  appIdentity?: { name: string; logoUrl: string | null; darkLogoUrl?: string | null };\n  selectedSetupIdentity?: SelectedSetupIdentity;');
+  replace('            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>', `            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+            {selectedSetupIdentity ? (
+              <div className="mt-2 text-sm" aria-label="Selected connection">
+                <p className="font-medium break-words">{selectedSetupIdentity.name}</p>
+                <p className="text-muted-foreground">{selectedSetupIdentity.audience}</p>
+              </div>
+            ) : null}`);
+  replace('  identity,\n  resuming = false,', '  identity,\n  selectedSetupIdentity,\n  resuming = false,');
+  replace('  identity?: { name: string; unverifiedHost: string | null };', '  identity?: { name: string; unverifiedHost: string | null };\n  selectedSetupIdentity?: SelectedSetupIdentity;');
+  replace('        subtitle="Secure MCP sign-in"', '        selectedSetupIdentity={selectedSetupIdentity}\n        subtitle="Secure MCP sign-in"');
  } else {
   updated = 'import { ProjectFigmaDesigns } from "./FigmaDesignEditor";\n' + updated;
   const anchor = '        {repositories ?? <ProjectRepositories key={project.id} project={project} />}';
