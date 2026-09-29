@@ -5,6 +5,8 @@ cd "$1"; run="$2"; start="$3"; teardown="$4"; stop="$5"
 # The launch-body and supervisor are staged from reviewed templates with new epochs.
 # Refuse unreviewed/stale input bundles before ANY Docker operation.
 shasum -a 256 -c session-input-sha256.txt > session-input-verification.txt
+# Exact runtime role identity is reviewed staging input, not learned from inspect.
+grep -Eq '^[0-9a-f]{64}  runtime-name$' session-input-sha256.txt || exit 3
 [ "$((stop-start))" -le 2700 ] && [ "$((stop-teardown))" -ge 300 ]
 if grep -Eq '1790699520|"$teardown"|1790702220' launch-body.sh supervisor.mjs; then
  echo 'Closed-window epochs in staged inputs' >&2; exit 2
@@ -12,7 +14,43 @@ fi
 image=ghcr.io/paperclipai/paperclip@sha256:4e2e1e59219129a4b687cd54ba439fb7fed0a5710af9f1551277dedd23dc61f1
 src=/Users/nolan/vts-figma-test/cap-e5aa0046-d064-474d-8b91-8422d31b70b1
 name="vts-figma-test-qual-${run:0:8}"
-own(){ test "$(docker inspect -f '{{index .Config.Labels "vts.figma.run"}}' "$1")" = "$run"; test "$(docker inspect -f '{{index .Config.Labels "vts.figma.issue"}}' "$1")" = VIS-6; case "$(docker inspect -f '{{.Name}}' "$1")" in /vts-figma-test-*) ;; *) return 3;; esac; }
+own(){
+ local target="$1" role="" candidate recorded expected identity dns_network members mode
+ # Resolve only IDs explicitly registered by this session, never a prefix alone.
+ for candidate in resolver browser prep runtime probe; do
+  [ -f "$candidate-id" ] || continue
+  recorded=$(cat "$candidate-id") || return 3
+  if [ "$recorded" = "$target" ]; then
+   [ -z "$role" ] || return 3
+   role="$candidate"
+  fi
+ done
+ [ -n "$role" ] || return 3
+ case "$target" in ''|*[!0-9a-f]*) return 3;; esac
+ [ "${#target}" -eq 64 ] || return 3
+ case "$role" in
+  resolver) expected="vts-figma-test-dns-$run";;
+  runtime)
+   # Staging must pin this exact launcher name in session-input-sha256.txt.
+   expected=$(cat runtime-name) || return 3
+   case "$expected" in vts-figma-test-*) ;; *) return 3;; esac;;
+  *) expected="$name-$role";;
+ esac
+ identity=$(docker inspect -f '{{.Id}}|{{.Name}}|{{index .Config.Labels "vts.figma.issue"}}|{{index .Config.Labels "vts.figma.run"}}' "$target") || return 3
+ [ "$identity" = "$target|/$expected|VIS-6|$run" ] || return 3
+ if [ "$role" = resolver ]; then
+  dns_network=$(cat resolver-network-id) || return 3
+  case "$dns_network" in ''|*[!0-9a-f]*) return 3;; esac
+  [ "${#dns_network}" -eq 64 ] || return 3
+  identity=$(docker network inspect -f '{{.Id}}|{{.Name}}|{{index .Labels "vts.figma.issue"}}|{{index .Labels "vts.figma.run"}}|{{.Driver}}|{{.Internal}}' "$dns_network") || return 3
+  [ "$identity" = "$dns_network|vts-figma-test-dns-$run|VIS-6|$run|bridge|false" ] || return 3
+  mode=$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$target") || return 3
+  [ "$mode" = "$dns_network" ] || return 3
+  members=$(docker network inspect -f '{{range $id, $c := .Containers}}{{$id}} {{end}}' "$dns_network") || return 3
+  [ -z "$members" ] || [ "$members" = "$target " ] || return 3
+ fi
+ return 0
+}
 window(){ bash assert-session-window.sh "$start" "$teardown" "$stop"; }
 cleanup(){
  result=$?; trap - EXIT; set +e
@@ -25,11 +63,11 @@ cleanup(){
    own "$id" || { echo "Ownership failure"; result=5; continue; }
    docker inspect -f '{"id":"{{.Id}}","running":{{.State.Running}},"exit":{{.State.ExitCode}},"oom":{{.State.OOMKilled}},"memory":{{.HostConfig.Memory}},"swap":{{.HostConfig.MemorySwap}},"cpu":{{.HostConfig.NanoCpus}},"pids":{{.HostConfig.PidsLimit}}}' "$id" > "$role-final.json"
    docker logs "$id" > "$role-private.log" 2>&1
-   docker stop --time 10 "$id" >/dev/null 2>&1
+   own "$id" || { result=5; continue; }
+   docker stop --time 10 "$id" >/dev/null 2>&1 || result=5
    # DNS resolver is explicitly removed (not AutoRemove); preserve exact ownership.
    if [ "$role" = resolver ]; then
-    test "$(docker inspect -f '{{.Id}}|{{.Name}}|{{index .Config.Labels "vts.figma.issue"}}|{{index .Config.Labels "vts.figma.run"}}' "$id")" = "$id|/vts-figma-test-dns-$run|VIS-6|$run" &&
-      docker rm "$id" >/dev/null || result=5
+    own "$id" && docker rm "$id" >/dev/null || result=5
    fi
   fi
   if docker inspect "$id" >/dev/null 2>&1; then result=5; echo "Exact resource remains: $role"; fi
@@ -40,7 +78,8 @@ cleanup(){
   present=$(docker network ls -q --no-trunc --filter "id=$dns_network") || result=5
   if [ -n "$present" ]; then
    if [ "$present" = "$dns_network" ] &&
-      [ "$(docker network inspect -f '{{.Id}}|{{.Name}}|{{index .Labels "vts.figma.issue"}}|{{index .Labels "vts.figma.run"}}|{{len .Containers}}' "$dns_network")" = "$dns_network|vts-figma-test-dns-$run|VIS-6|$run|0" ]; then
+      network_identity=$(docker network inspect -f '{{.Id}}|{{.Name}}|{{index .Labels "vts.figma.issue"}}|{{index .Labels "vts.figma.run"}}|{{len .Containers}}' "$dns_network") &&
+      [ "$network_identity" = "$dns_network|vts-figma-test-dns-$run|VIS-6|$run|0" ]; then
     docker network rm "$dns_network" >/dev/null || result=5
    else result=5; fi
   fi
