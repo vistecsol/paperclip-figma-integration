@@ -11,7 +11,7 @@ providers preserve native behavior. The source matched exact upstream bytes.
 
 Focused patched-selector execution and project create/configuration DOM checks
 passed. The latter preserves the GitHub payload and exercises actual attachment
-transitions with simulated transport. New selector browser deployment is deferred.
+transitions with simulated transport. Installed selector intent/identity is now evidenced in both native orderings; see consolidated-selector-lifecycle-result.md for diagnostic limits.
 Provenance now includes the project-UI patch and supplied UI components. The
 rebuilt domain includes the previously committed atomic rebind command.
 
@@ -23,12 +23,12 @@ rebuilt domain includes the previously committed atomic rebind command.
 | Native browser | Create/configuration persistence and worker-enabled synthetic Designs reload passed |
 | Onboarding | Pinned bytes and additive preservation/replay passed; native GitHub audit rejected |
 | Revised packaging | Normal prepack and repeat build/pack results attached to issue |
-| New selection behavior | Function/patch checks passed; actual browser deferred |
+| New selection behavior | Installed new/resume/reconnect intent and visible identity passed in both native orderings; writes intercepted, service workers blocked for this diagnostic |
 | Concurrent employees/protected runtime | Deferred; one legacy employee does not prove these |
 | Live refresh/revocation/grant removal | Deferred |
-| Positive live GitHub coexistence | Deferred; synthetic create payload passed |
+| GitHub association coexistence | Native saved repository and three synthetic design links persist together; GitHub authorization is not proved |
 | Full host typecheck/build/CI | Unpassed; prior OOM, no retry here |
-| Two-instance lifecycle | Upgrade/restart/disable/uninstall/rollback matrix deferred |
+| Lifecycle | Native disable denies keyed reads/writes; re-enable preserves exact three-link/revision/repository snapshot. Restart/upgrade/uninstall/rollback and two-instance matrix remain deferred |
 | Independent review | Theo waits for complete candidate; no interim wake |
 
 The live four-call allowance is exhausted and app remains offline. Adam has no
@@ -47,3 +47,5 @@ links. Builds refused those configurations; prepack refused stale outputs. Both
 were corrected in scratch without disabling checks. No Docker, full-host compiler,
 provider call or production action. Exact implementation commit, archive digest
 and inventory are recorded outside the tarball to avoid self-reference.
+
+Latest bounded zero-provider receipts: [consolidated selector/lifecycle result](consolidated-selector-lifecycle-result.md). These do not qualify the full release.
