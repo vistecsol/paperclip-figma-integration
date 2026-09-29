@@ -25,5 +25,7 @@ docker cp qualification-dns.mjs "$cid:/app/qualification-dns.mjs"
 docker cp qualification-dns.json "$cid:/app/qualification-dns.json"
 docker cp native-proof.mjs "$cid:/app/native-proof.mjs"
 bash assert-session-window.sh "$3" "$4" "$5"
-docker exec -e "QUALIFICATION_RUN_ID=$run" "$cid" node /app/native-proof.mjs > native-proof.json
+# Docker exec does not inherit the calling shell deadline. Forward the validated
+# teardown argument explicitly, as the lifecycle driver does.
+docker exec -e "QUALIFICATION_RUN_ID=$run" -e "QUALIFICATION_TEARDOWN_EPOCH=$4" "$cid" node /app/native-proof.mjs > native-proof.json
 cat native-proof.json
