@@ -12,7 +12,11 @@ if grep -Eq '1790699520|"$teardown"|1790702220' launch-body.sh supervisor.mjs; t
  echo 'Closed-window epochs in staged inputs' >&2; exit 2
 fi
 image=ghcr.io/paperclipai/paperclip@sha256:4e2e1e59219129a4b687cd54ba439fb7fed0a5710af9f1551277dedd23dc61f1
-src=/Users/nolan/vts-figma-test/cap-e5aa0046-d064-474d-8b91-8422d31b70b1
+src=/Users/nolan/vts-figma-test/identity-6a7686f1-6947-4223-ba87-63b89733c75d
+# Bind the approved identity output before any Docker operation or cleanup trap.
+cmp expected-output-sha256.txt "$src/output-sha256.txt"
+[ "$(shasum -a 256 "$src/output/candidate.tgz" | cut -d' ' -f1)" = e0c835c8a32647fecbc294361328fefb7fda970026b69464fe4933c3efc46e2b ]
+(cd "$src"; shasum -a 256 -c output-sha256.txt) > output-verification.txt
 name="vts-figma-test-qual-${run:0:8}"
 own(){
  local target="$1" role="" candidate recorded expected identity dns_network members mode
@@ -95,8 +99,6 @@ cleanup(){
 trap cleanup EXIT
 window
 test -z "$(docker ps -q)"
-cmp expected-output-sha256.txt "$src/output-sha256.txt"
-(cd "$src"; shasum -a 256 -c output-sha256.txt) > output-verification.txt
 probe=$(docker create --rm --name "$name-probe" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --user node --entrypoint node --network none --memory 64m --memory-swap 64m --cpus .25 --pids-limit 32 --read-only --cap-drop ALL --security-opt no-new-privileges --cgroupns host "$image" --input-type=module -e "$(cat supervisor.mjs)")
 echo "$probe" > probe-id
 own "$probe"; docker inspect -f '{{.Image}}' "$probe" > probe-image-id
