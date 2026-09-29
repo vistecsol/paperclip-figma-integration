@@ -51,13 +51,18 @@ trap 'exit 130' INT
 dns_network=$(docker network create --driver bridge --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" "$network_name")
 echo "$dns_network" > resolver-network-id
 network_check empty
-resolver=$(docker create --name "vts-figma-test-dns-$run" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --user node --entrypoint node --network "$dns_network" --memory 64m --memory-swap 64m --cpus .25 --pids-limit 32 --read-only --cap-drop ALL --security-opt no-new-privileges "$image" --max-old-space-size=32 /app/fresh-draft-dns.mjs "$run")
+resolver=$(docker create -i --name "vts-figma-test-dns-$run" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --user node --entrypoint node --network "$dns_network" --memory 64m --memory-swap 64m --cpus .25 --pids-limit 32 --read-only --cap-drop ALL --security-opt no-new-privileges "$image" --max-old-space-size=32 --input-type=module -e "$(cat resolver-stdin.mjs)")
 echo "$resolver" > resolver-id
 resolver_check
 network_check owned
  test "$(docker inspect -f '{{.HostConfig.Memory}}|{{.HostConfig.MemorySwap}}|{{.HostConfig.NanoCpus}}|{{.HostConfig.PidsLimit}}|{{.HostConfig.ReadonlyRootfs}}|{{.Config.User}}|{{len .Mounts}}' "$resolver")" = '67108864|67108864|250000000|32|true|node|0'
-for module in qualification-dns.mjs fresh-draft-dns.mjs; do docker cp "$module" "$resolver:/app/$module"; done
-docker cp qualification-dns.json "$resolver:/app/qualification-dns.json"
+# Credential-free reviewed inputs travel through stdin; rootfs stays read-only.
+{
+ printf '{"run":"%s","library":"' "$run"; base64 < qualification-dns.mjs | tr -d '\r\n'
+ printf '","source":"'; base64 < fresh-draft-dns.mjs | tr -d '\r\n'
+ printf '","mapping":'; cat qualification-dns.json
+ printf '}'
+} > resolver-input.json
 bash assert-session-window.sh "$start" "$teardown" "$stop"
 resolver_check
 network_check owned
@@ -67,7 +72,7 @@ docker exec "$probe" node --input-type=module -e "$(cat ui-capacity.mjs)
 $(cat resolver-admission.mjs)
 assertResolverAdmission({completeAncestorEvidence:complete,effectiveHeadroomBytes:headroom,diskFreeBytes:diskFree,time:new Date().toISOString()});
 " > resolver-admission.json
-docker start -a "$resolver" > qualification-dns-fresh.json
+docker start -ai "$resolver" < resolver-input.json > qualification-dns-fresh.json
 test "$(docker inspect -f '{{.State.ExitCode}}|{{.State.OOMKilled}}' "$resolver")" = '0|false'
 # No receipt copy after failure; the native caller validates freshness again at POST.
 docker cp qualification-dns-fresh.json "$app:/app/qualification-dns-fresh.json"

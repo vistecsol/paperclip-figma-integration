@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+const run='11111111-1111-1111-1111-111111111111';
+const encode=s=>Buffer.from(s).toString('base64');
+const source="import {check} from './qualification-dns.mjs'; export async function resolveFreshDraft(x){check(x);console.log('input-boundary-passed')}";
+const input={run,mapping:{run},library:encode("import assert from 'node:assert/strict';export function check(x){assert.equal(x.run,x.mapping.run)}"),source:encode(source)};
+const invoke=x=>spawnSync(process.execPath,['operator/resolver-stdin.mjs'],{input:JSON.stringify(x),encoding:'utf8'});
+const ok=invoke(input);assert.equal(ok.status,0,ok.stderr);assert.match(ok.stdout,/input-boundary-passed/);
+assert.notEqual(invoke({...input,mapping:{run:'foreign'}}).status,0);
+assert.notEqual(invoke({...input,source:encode('export function resolveFreshDraft(){}')}).status,0);
+console.log('Actual stdin bootstrap preserves run/mapping and refuses mismatched identity or missing module anchor; no DNS/Docker.');

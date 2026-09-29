@@ -3,7 +3,7 @@ import os,pathlib,subprocess,tempfile,shutil
 root=pathlib.Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(dir=os.environ.get('PAPERCLIP_RUN_SCRATCH_DIR')) as tmp:
  p=pathlib.Path(tmp);run='11111111-1111-1111-1111-111111111111'
- for n in ['collect-fresh-draft-dns.sh','ui-capacity.mjs','resolver-admission.mjs']:
+ for n in ['collect-fresh-draft-dns.sh','ui-capacity.mjs','resolver-admission.mjs','resolver-stdin.mjs']:
   shutil.copy(root/'operator'/n,p/n)
  for n in ['qualification-dns.mjs','fresh-draft-dns.mjs','qualification-dns.json']:(p/n).write_text('{}')
  (p/'assert-session-window.sh').write_text('exit 0\n')
@@ -58,6 +58,10 @@ else:sys.exit(97)
   if bad in ['', 'admission','start','cleanup-residue']:
    assert ['rm','-f','c'*64] in calls and ['network','rm','d'*64] in calls,calls
   if bad=='':
+   create=next(x for x in calls if x[0]=='create')
+   assert '-i' in create and '--read-only' in create
+   assert not any(x[0]=='cp' and ('c'*64+':') in x[-1] for x in calls)
+   assert ['start','-ai','c'*64] in calls
    i=next(i for i,x in enumerate(calls) if x[0]=='start')
    assert calls[i-1][0]=='exec'
 print('Mocked resolver ownership/membership, pre-start admission refusal, failure cleanup and independent absence checks passed. No Docker/DNS executed.')
