@@ -49,3 +49,12 @@ provider call or production action. Exact implementation commit, archive digest
 and inventory are recorded outside the tarball to avoid self-reference.
 
 Latest bounded zero-provider receipts: [consolidated selector/lifecycle result](consolidated-selector-lifecycle-result.md). These do not qualify the full release.
+
+## Retention qualification handoff
+
+See [exact remaining lifecycle protocol](lifecycle-retention-protocol.md).
+Restart, upgrade, rollback, soft-uninstall/restore and second-instance receipts
+remain deferred individually. Same-version diagnostic packages cannot prove an
+upgrade. Native local installation is evidenced; standalone built-host portability
+is not. Offline receipt assertions reject missing snapshots, changed references,
+same-version transitions and shared instance storage; they are not runtime proof.
