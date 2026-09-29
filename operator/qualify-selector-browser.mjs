@@ -26,10 +26,10 @@ try{
   const observer=await observeSelector(ctx,origin,fixture.companyId);
   const page=await ctx.newPage();page.setDefaultTimeout(15000);
   await page.goto('/'+fixture.issuePrefix+'/apps/connect?source=figma&'+(mode==='new'?'new=1':mode+'='+fixture.connectionId),{waitUntil:'domcontentloaded'});
-  await page.getByRole('button',{name:/^Continue$|^Continue to Figma$/}).first().waitFor({state:'visible'});
+  await page.getByRole('button',{name:/^Continue$|^Continue to Figma$|^Finish with Figma$/}).first().waitFor({state:'visible'});
   const rendered=await captureRenderedIdentity(page,{mode,names:{shared:chosen.name,foreign:baseline.find(x=>x.id===fixture.foreignConnectionId).name}});
   if(!observer.events.some(x=>x.kind==='mutation-blocked')){
-   const button=page.getByRole('button',{name:/^Continue$|^Continue to Figma$/}).first();
+   const button=page.getByRole('button',{name:/^Continue$|^Continue to Figma$|^Finish with Figma$/}).first();
    await button.click();
    await page.waitForTimeout(500);
   }
