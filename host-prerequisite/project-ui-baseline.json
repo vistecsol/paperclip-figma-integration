@@ -8,6 +8,10 @@
     {
       "path": "ui/src/components/ProjectProperties.tsx",
       "sha256": "fa6e3a4f2d5dc5e06b7866d23e3efb1a358bc41903325d1a9814d65b56b41fcc"
+    },
+    {
+      "path": "ui/src/features/connections/ConnectionSetupFlow.tsx",
+      "sha256": "b6161ab826a5601884c742d5ccae4b7c347b8af0e5c37decfb81eef63b7d61c2"
     }
   ]
 }

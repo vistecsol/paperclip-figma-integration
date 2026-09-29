@@ -68,6 +68,14 @@ function changeDesigns(current, command, options = {}) {
       attachments.push(row);
       break;
     }
+    case "rebind": {
+      const row = find();
+      const connectionId = requiredId(command.connectionId, "connection");
+      if (attachments.some((a) => a.id !== row.id && key(a) === key({ ...row, connectionId }))) fail("duplicate_design", 409);
+      row.connectionId = connectionId;
+      row.verification = { state: "unverified", checkedAt: null };
+      break;
+    }
     case "update": {
       const row = find();
       if (Object.hasOwn(command, "label")) row.label = text(command.label, 200, "label");
@@ -131,6 +139,7 @@ var designApiRoutes = [
 }));
 var commandFields = {
   add: ["expectedRevision", "connectionId", "url", "label", "purpose"],
+  rebind: ["expectedRevision", "id", "connectionId"],
   update: ["expectedRevision", "id", "label", "purpose"],
   detach: ["expectedRevision", "id"],
   primary: ["expectedRevision", "id"],
@@ -232,7 +241,7 @@ function hostDesignOperations({ withProject }) {
       return execute(request, true, async ({ store, companyId, projectId, authorizeConnection }) => {
         const before = await store.read(companyId, projectId);
         const after = changeDesigns(before, input);
-        if (input.type === "add") {
+        if (input.type === "add" || input.type === "rebind") {
           if (typeof authorizeConnection !== "function") throw new DesignError("design_access_denied", 403);
           await authorizeConnection(input.connectionId);
         }

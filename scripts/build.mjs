@@ -27,9 +27,12 @@ writeFileSync('dist/build-provenance.json', JSON.stringify({
   hostCommit: 'd554c4789ed3930f8a53ac9fdf6503b3187097da', hostVersion: '2026.916.1',
   esbuildVersion: esbuild.version,
   sourceInputs: Object.fromEntries(readdirSync('src').filter(name => /\.(mjs|jsx)$/.test(name)).map(name => [`src/${name}`, hash(`src/${name}`)])),
-  prerequisitePatches: Object.fromEntries(['figma-managed-oauth', 'figma-invocation-scope', 'figma-design-rpc', 'figma-run-sources', 'figma-inspection', 'figma-catalog', 'figma-board-policy'].map(name => [name, hash(`host-prerequisite/${name}.patch`)])),
+  prerequisitePatches: Object.fromEntries(['figma-managed-oauth', 'figma-invocation-scope', 'figma-design-rpc', 'figma-run-sources', 'figma-inspection', 'figma-catalog', 'figma-board-policy', 'figma-project-ui'].map(name => [name, hash(`host-prerequisite/${name}.patch`)])),
   outputs: Object.fromEntries(['worker.mjs', 'manifest.mjs', 'ui/index.js'].map(name => [name, hash(`dist/${name}`)])),
-  hostAssetInputs: { 'host-prerequisite/figma-app-definition.json': hash('host-prerequisite/figma-app-definition.json') },
+  hostAssetInputs: Object.fromEntries([
+    'host-prerequisite/figma-app-definition.json',
+    ...readdirSync('host-prerequisite/ui/src/components').map(name => 'host-prerequisite/ui/src/components/' + name),
+  ].map(path => [path, hash(path)])),
   hostServiceInputs: Object.fromEntries(readdirSync('host-prerequisite/server/src/services').map(name => {
     const path = `host-prerequisite/server/src/services/${name}`;
     return [path, hash(path)];

@@ -9,8 +9,8 @@ The unmodified Paperclip `2026.916.1` host at commit
 `d554c4789ed3930f8a53ac9fdf6503b3187097da` does not provide the required RPC.
 Worker initialization rejects that unsupported host. Only the isolated patched
 source has been tested. A compatible built host must include the OAuth,
-invocation, RPC, run-source, inspection, catalog and board-policy prerequisite patches plus the explicitly supplied host service
-modules. This is an approved host prerequisite, not a standalone npm-only route;
+invocation, RPC, run-source, inspection, catalog, board-policy and project-UI prerequisite patches plus the explicitly supplied host service
+and UI modules. Figma connection reuse now requires explicit resume/reconnect. This is an approved host prerequisite, not a standalone npm-only route;
 the npm package never patches a running host. No broader host range is claimed.
 
 Use the checkpoint's preparation/build commands. Retain the tarball SHA-256,
@@ -69,3 +69,7 @@ volumes, browser/OAuth origin and retention-safe stop/rollback instructions.
 Elena must resolve the remaining host launch/capacity decision before any build
 or runtime start. Source preparation is checked; container and lifecycle proof
 remain unpassed.
+
+## Current evidence correction — 29 September
+
+Local tarball installation on fresh Mac state, native project browser persistence, managed OAuth and one fresh legacy employee retrieval have passed. Earlier unproven statements above are historical for those specific checks. Full two-instance lifecycle, concurrent/shared-agent, protected-runtime, live refresh/revocation and native GitHub skill audit remain unpassed. See candidate-consolidation.md. All apps are offline; further live work needs coordinated scope. Rollback must retain named test state and design links.

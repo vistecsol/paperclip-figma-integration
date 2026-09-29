@@ -64,3 +64,16 @@
          <PropertyRow
            label={<FieldLabel label="Env" state={fieldState("env")} />}
            alignStart
+--- a/ui/src/features/connections/ConnectionSetupFlow.tsx
++++ b/ui/src/features/connections/ConnectionSetupFlow.tsx
+@@ -449,7 +449,9 @@
+   connections: ToolConnection[],
+   options: { applicationId?: string; draftOnly?: boolean } = {},
+ ): ToolConnection | null {
+-  if (!sourceSlug) return null;
++  // Figma setup must never silently adopt a different saved identity.
++  // Explicit resume/reconnect is resolved separately and remains server-authorized.
++  if (!sourceSlug || sourceSlug === "figma") return null;
+   const matchingApplicationIds = new Set(
+     applications
+       .filter((application) =>

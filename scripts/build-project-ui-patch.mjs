@@ -28,6 +28,10 @@ for (const [i, file] of baseline.files.entries()) {
   replace('disabled={create.isPending} onChange={(event) => setName', 'disabled={create.isPending || !!createdProject.current} onChange={(event) => setName');
   replace('disabled={create.isPending} />\n        </div>', 'disabled={create.isPending || !!createdProject.current} />\n          <FigmaDesignEditor companyId={companyId} selected={designs} onChange={setDesigns} disabled={create.isPending || !!createdProject.current} />\n        </div>');
   replace('{create.isPending ? "Creating…" : "Create project"}', '{create.isPending ? "Saving…" : createdProject.current ? "Retry design save" : "Create project"}');
+ } else if (file.path.endsWith('ConnectionSetupFlow.tsx')) {
+  replace('  if (!sourceSlug) return null;', `  // Figma setup must never silently adopt a different saved identity.
+  // Explicit resume/reconnect is resolved separately and remains server-authorized.
+  if (!sourceSlug || sourceSlug === "figma") return null;`);
  } else {
   updated = 'import { ProjectFigmaDesigns } from "./FigmaDesignEditor";\n' + updated;
   const anchor = '        {repositories ?? <ProjectRepositories key={project.id} project={project} />}';

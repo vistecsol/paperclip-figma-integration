@@ -9,7 +9,10 @@ import { changeDesigns } from '../src/attachments.mjs';
 const host = resolve(process.argv[2] ?? '/app');
 const scratch = join(process.env.PAPERCLIP_RUN_SCRATCH_DIR, 'project-ui-proof');
 mkdirSync(join(scratch, 'ui/src/components'), { recursive: true });
-for (const name of ['NewProjectDialog.tsx','ProjectProperties.tsx']) copyFileSync(join(host, 'ui/src/components', name), join(scratch, 'ui/src/components', name));
+for (const {path} of JSON.parse(readFileSync('host-prerequisite/project-ui-baseline.json')).files) {
+ mkdirSync(join(scratch, path, '..'), {recursive:true});
+ copyFileSync(join(host, path), join(scratch, path));
+}
 const applied = spawnSync('git', ['apply', '--unsafe-paths', '--directory', scratch, resolve('host-prerequisite/figma-project-ui.patch')], { encoding: 'utf8' });
 assert.equal(applied.status, 0, applied.stderr);
 const component = resolve('host-prerequisite/ui/src/components/FigmaDesignEditor.tsx');
