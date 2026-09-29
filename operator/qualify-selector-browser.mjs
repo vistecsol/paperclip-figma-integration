@@ -12,10 +12,17 @@ let browser,stage='start';const results=[];
 try{
  browser=await chromium.launch({headless:true,args:['--disable-dev-shm-usage']});
  assert.deepEqual(input.state.selectorCases.map(x=>x.order),selectorOrders);
+ // Authenticate once, then reuse only this synthetic user's in-memory state in
+ // isolated browser contexts. Six sign-ins test the auth limiter, not selection.
+ stage='authenticate';
+ const authContext=await createSelectorContext(browser,{baseURL:origin});
+ const login=await authContext.request.post('/api/auth/sign-in/email',{data:input.account,headers:{origin},timeout:15000});
+ assert.equal(login.status(),200,'Native synthetic authentication failed');
+ const storageState=await authContext.storageState();
+ await authContext.close();
  for(const fixture of input.state.selectorCases)for(const mode of ['new','resume','reconnect']){
   stage=fixture.order+':'+mode;
-  const ctx=await createSelectorContext(browser,{baseURL:origin});
-  const login=await ctx.request.post('/api/auth/sign-in/email',{data:input.account,headers:{origin},timeout:15000});assert.equal(login.status(),200);
+  const ctx=await createSelectorContext(browser,{baseURL:origin,storageState});
   const path='/api/companies/'+fixture.companyId+'/tools/connections';
   const baselineResponse=await ctx.request.get(path);assert.equal(baselineResponse.status(),200);
   const baseline=connectionRows(await baselineResponse.json());
