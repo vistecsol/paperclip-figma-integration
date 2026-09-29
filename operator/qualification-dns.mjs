@@ -41,3 +41,14 @@ export async function collectDnsReceipt({run,guardPath,resolve4,lookup,resolvers
   expiresAt:observedAt+Math.min(300,...answers.map(x=>x.ttl))*1000,answers};
  validateDnsReceipt(r,{run,now:now()});return r;
 }
+
+// Historical mapping evidence is not current DNS authority. Validate at observation
+// only for immutable routing checks; draft requests must use validateFreshMapping.
+export function validateMappingEvidence(receipt, options) {
+ return validateDnsReceipt(receipt,{...options,now:receipt.observedAt});
+}
+export function validateFreshMapping(receipt,{mapping,run,now=Date.now()}={}) {
+ const hosts=validateDnsReceipt(receipt,{run,now});
+ assert.deepEqual(hosts,validateMappingEvidence(mapping,{run}),'DNS changed since immutable host mapping; stop session');
+ return hosts;
+}

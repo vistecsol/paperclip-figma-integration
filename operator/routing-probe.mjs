@@ -30,7 +30,7 @@ export async function runProbe() {
  for(const key of ['app','browser','network','volume']){assert.equal(payload.records[key].length,1,'One exact inspect record');payload.records[key]=payload.records[key][0];}
  const {validateRouting}=await import('data:text/javascript;base64,'+payload.source);
  const routing=validateRouting(payload.records);
- const {validateDnsReceipt}=await import('data:text/javascript;base64,'+payload.dnsSource);
- validateDnsReceipt(payload.dnsReceipt,{run:payload.records.run,extraHosts:payload.records.app.HostConfig.ExtraHosts??[]});
- console.log(JSON.stringify({probeEnvironmentVerified:true,dnsReceiptVerified:true,...routing}));
+ const {validateMappingEvidence}=await import('data:text/javascript;base64,'+payload.dnsSource);
+ validateMappingEvidence(payload.dnsReceipt,{run:payload.records.run,extraHosts:payload.records.app.HostConfig.ExtraHosts??[]});
+ console.log(JSON.stringify({probeEnvironmentVerified:true,dnsMappingEvidenceVerified:true,...routing}));
 }

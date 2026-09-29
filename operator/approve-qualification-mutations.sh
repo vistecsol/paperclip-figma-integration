@@ -31,6 +31,11 @@ assert.ok(x.sample.headroom>=1280*1024**2&&x.sample.diskFree>=2*1024**3);
 for(const k of ["app","browser","network","volume"])x[k]=x[k][0];
 const {validateRouting}=await import("data:text/javascript;base64,"+x.source);validateRouting(x);
 ' >> mutation-guards.txt
+  # Collect exactly once for this draft, after all slow setup and guard checks.
+  dns_nonce=$(docker exec "$app" node -e 'const f=require("fs");try{process.stdout.write(f.readFileSync("/app/qualification-guard-dns-request","utf8"))}catch{}')
+  if [ "$dns_nonce" = "$nonce" ]; then
+   bash collect-fresh-draft-dns.sh "$PWD" "$run" "$start" "$teardown" "$stop"
+  fi
   bash assert-session-window.sh "$start" "$teardown" "$stop"
   printf '%s' "$nonce" | docker exec -i "$app" node -e 'const f=require("fs"),nonce=f.readFileSync(0,"utf8");if(!/^[a-f0-9-]{36}$/.test(nonce))throw Error("nonce");f.writeFileSync("/app/qualification-guard-approval",JSON.stringify({nonce,time:Date.now()}));'
   last="$nonce"

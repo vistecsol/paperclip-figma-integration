@@ -4,14 +4,24 @@ import fs from 'node:fs';
 import {seedDraftPair,assertDraftPair,selectorOrders} from './selector-fixtures.mjs';
 import {beforeMutation} from './qualification-mutation-guard.mjs';
 import {lookup} from 'node:dns/promises';
-import {validateDnsReceipt,hostname} from './qualification-dns.mjs';
+import {validateFreshMapping,validateMappingEvidence,hostname} from './qualification-dns.mjs';
 import {randomBytes,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const origin='http://localhost:3310',root='/paperclip/instances/default/test-bootstrap';
 const account={email:'qualification@example.invalid',name:'Qualification Operator',password:randomBytes(32).toString('hex')};
 let cookie='';const receipts=[];
 async function req(path,body,method=body===undefined?'GET':'POST'){
- if(method!=='GET'&&method!=='HEAD')await beforeMutation();
+ if(method!=='GET'&&method!=='HEAD'){
+  const draft=path.endsWith('/tools/connections');
+  await beforeMutation({dns:draft});
+  if(draft){
+   const fresh=JSON.parse(fs.readFileSync('/app/qualification-dns-fresh.json','utf8'));
+   validateFreshMapping(fresh,{mapping:JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8')),run:process.env.QUALIFICATION_RUN_ID});
+   const resolved=await lookup(hostname,{all:true,verbatim:true});
+   assert.deepEqual([...new Set(resolved.map(x=>x.address))].sort(),fresh.answers.map(x=>x.address).sort());
+   validateFreshMapping(fresh,{mapping:JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8')),run:process.env.QUALIFICATION_RUN_ID});
+  }
+ }
  const r=await fetch('http://127.0.0.1:3310'+path,{method,signal:AbortSignal.timeout(20000),headers:{'content-type':'application/json',origin,host:'localhost:3310',...(cookie?{cookie}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
  if(r.headers.getSetCookie().length)cookie=r.headers.getSetCookie().map(x=>x.split(';')[0]).join('; ');
  const data=await r.json();receipts.push({path,status:r.status});
@@ -20,7 +30,7 @@ async function req(path,body,method=body===undefined?'GET':'POST'){
 }
 try{
  const initialDns=JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8'));
- validateDnsReceipt(initialDns,{run:process.env.QUALIFICATION_RUN_ID});
+ validateMappingEvidence(initialDns,{run:process.env.QUALIFICATION_RUN_ID});
  fs.mkdirSync(root,{recursive:true});
  fs.writeFileSync(root+'/qualification-attempt.json',JSON.stringify({startedAt:new Date().toISOString()}),{flag:'wx',mode:0o600});
  const health=await req('/api/health');assert.equal(health.status,'ok');
@@ -33,7 +43,7 @@ try{
  const pluginId=installed.id;
  await req('/api/plugins/'+pluginId+'/config',{companyId:company.id,configJson:{enabled:true}});
  const dnsReceipt=JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8'));
- validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
+ validateMappingEvidence(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
  const resolved=await lookup(hostname,{all:true,verbatim:true});
  assert.deepEqual([...new Set(resolved.map(x=>x.address))].sort(),dnsReceipt.answers.map(x=>x.address).sort(),'Installed OS resolver differs from receipt');
  const ownerCookie=cookie;
@@ -48,7 +58,7 @@ try{
   await req('/api/admin/users/'+foreignAuth.user.id+'/company-access',{companyIds:[...companyIds]},'PUT');
   const pair=await seedDraftPair({order,create:async(kind,payload)=>{
    cookie=kind==='shared'?ownerCookie:foreignCookie;
-   validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
+   validateMappingEvidence(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
    return req('/api/companies/'+scope.id+'/tools/connections',payload);
   }});
   cookie=ownerCookie;

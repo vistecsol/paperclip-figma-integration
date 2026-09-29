@@ -18,7 +18,7 @@ cleanup(){
  result=$?; trap - EXIT; set +e
  [ -z "${guardwatch:-}" ] || kill "$guardwatch" 2>/dev/null
  [ -z "${watch:-}" ] || kill "$watch" 2>/dev/null
- for role in browser prep runtime probe; do
+ for role in resolver browser prep runtime probe; do
   [ -f "$role-id" ] || continue
   id=$(cat "$role-id")
   if docker inspect "$id" >/dev/null 2>&1; then
@@ -48,12 +48,14 @@ sleep 3
 test "$(docker inspect -f '{{.State.Running}}' "$probe")" = true
 docker logs "$probe" > admission.json
 grep -q '"admitted":true' admission.json
+# Staged supervisor must include the DNS-only resolver's extra 64 MiB.
+grep -q '3712' supervisor.mjs
 # Supervisor exit/deadline immediately tears down only this session's registered workloads.
 (
  while sleep 2; do
   if [ "$(date +%s)" -ge "$teardown" ] || [ "$(docker inspect -f '{{.State.Running}}' "$probe" 2>/dev/null)" != true ]; then
    echo supervisor-stop > safety-stop.txt
-   for role in browser prep runtime; do
+   for role in resolver browser prep runtime; do
     if [ -f "$role-id" ]; then id=$(cat "$role-id"); own "$id" && docker stop --time 5 "$id" >/dev/null 2>&1; fi
    done
    exit
@@ -82,7 +84,7 @@ docker stop "$prep" >/dev/null
 test "$(docker inspect -f '{{.State.Running}}' "$probe")" = true
 docker logs --tail 1 "$probe" > immediate-admission.json
 # Fresh sample gate, from the existing supervisor's JSON, through a small built-in exec.
-docker exec "$probe" node -e 'const f=require("fs");let h=Number(f.readFileSync("/proc/meminfo","utf8").match(/MemAvailable:\s+(\d+)/)[1])*1024;const r=f.readFileSync("/proc/self/cgroup","utf8").trim().split(":").pop();let p=require("path").dirname("/sys/fs/cgroup"+r);while(p!=="/sys/fs"){for(const k of ["memory.max","memory.high"]){if(f.existsSync(p+"/"+k)){const x=f.readFileSync(p+"/"+k,"utf8").trim();if(/^\d+$/.test(x))h=Math.min(h,Math.max(0,Number(x)-Number(f.readFileSync(p+"/memory.current","utf8"))));}}if(p==="/sys/fs/cgroup")break;p=require("path").dirname(p);}if(h<3648*1024**2)process.exit(2);console.log(JSON.stringify({immediateHeadroom:h}));' > immediate-gate.json
+docker exec "$probe" node -e 'const f=require("fs");let h=Number(f.readFileSync("/proc/meminfo","utf8").match(/MemAvailable:\s+(\d+)/)[1])*1024;const r=f.readFileSync("/proc/self/cgroup","utf8").trim().split(":").pop();let p=require("path").dirname("/sys/fs/cgroup"+r);while(p!=="/sys/fs"){for(const k of ["memory.max","memory.high"]){if(f.existsSync(p+"/"+k)){const x=f.readFileSync(p+"/"+k,"utf8").trim();if(/^\d+$/.test(x))h=Math.min(h,Math.max(0,Number(x)-Number(f.readFileSync(p+"/memory.current","utf8"))));}}if(p==="/sys/fs/cgroup")break;p=require("path").dirname(p);}if(h<3712*1024**2)process.exit(2);console.log(JSON.stringify({immediateHeadroom:h}));' > immediate-gate.json
 . ./launch-body.sh
 # Bounded readiness only; no fixture until listener is healthy.
 docker exec "$cid" node -e 'const end=Date.now()+60000; (async()=>{while(Date.now()<end){try{const r=await fetch("http://127.0.0.1:3310/api/health",{signal:AbortSignal.timeout(2000)});if(r.ok){console.log(JSON.stringify({health:await r.json()}));return}}catch{}await new Promise(r=>setTimeout(r,1000))}process.exit(1)})()' > health.json
