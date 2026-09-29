@@ -1,6 +1,7 @@
 // Fresh, isolated, credential-free qualification instance only. No provider invocation.
 // A failed prerequisite ends the coordinated attempt; do not rerun against partial state.
 import fs from 'node:fs';
+import {seedDraftPair,assertDraftPair,selectorOrders} from './selector-fixtures.mjs';
 import {beforeMutation} from './qualification-mutation-guard.mjs';
 import {lookup} from 'node:dns/promises';
 import {validateDnsReceipt,hostname} from './qualification-dns.mjs';
@@ -35,19 +36,32 @@ try{
  validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
  const resolved=await lookup(hostname,{all:true,verbatim:true});
  assert.deepEqual([...new Set(resolved.map(x=>x.address))].sort(),dnsReceipt.answers.map(x=>x.address).sort(),'Installed OS resolver differs from receipt');
- const connection=await req('/api/companies/'+company.id+'/tools/connections',{name:'Qualification shared draft',applicationName:'Figma',transport:'mcp_remote',authKind:'oauth',credentialPolicy:'shared',status:'draft',enabled:true,config:{sourceTemplateKey:'figma',url:'https://mcp.figma.com/mcp'},transportConfig:{url:'https://mcp.figma.com/mcp'},credentialRefs:[]});
  const ownerCookie=cookie;
  const foreign={email:'foreign@example.invalid',name:'Foreign Fixture',password:randomBytes(32).toString('hex')};
  cookie='';
  const foreignAuth=await req('/api/auth/sign-up/email',foreign);
  const foreignCookie=cookie;cookie=ownerCookie;
- await req('/api/admin/users/'+foreignAuth.user.id+'/company-access',{companyIds:[company.id]},'PUT');
- cookie=foreignCookie;
- validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
- const personal=await req('/api/companies/'+company.id+'/tools/connections',{name:'Foreign personal draft',applicationId:connection.applicationId,transport:'mcp_remote',authKind:'oauth',credentialPolicy:'per_user',status:'draft',enabled:true,config:{sourceTemplateKey:'figma',url:'https://mcp.figma.com/mcp'},transportConfig:{url:'https://mcp.figma.com/mcp'},credentialRefs:[]});
- cookie=ownerCookie;
+ const selectorCases=[];const companyIds=[];
+ for(const order of selectorOrders){
+  const scope=selectorCases.length===0?company:await req('/api/companies',{name:'VTS Reverse Selector Qualification'});
+  companyIds.push(scope.id);
+  await req('/api/admin/users/'+foreignAuth.user.id+'/company-access',{companyIds:[...companyIds]},'PUT');
+  const pair=await seedDraftPair({order,create:async(kind,payload)=>{
+   cookie=kind==='shared'?ownerCookie:foreignCookie;
+   validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
+   return req('/api/companies/'+scope.id+'/tools/connections',payload);
+  }});
+  cookie=ownerCookie;
+  const fixture={order,companyId:scope.id,issuePrefix:scope.issuePrefix,connectionId:pair.shared.id,
+   applicationId:pair.shared.applicationId,foreignConnectionId:pair.foreign.id,
+   ownerUserId:auth.user.id,foreignUserId:foreignAuth.user.id};
+  assertDraftPair(await req('/api/companies/'+scope.id+'/tools/connections'),fixture);
+  selectorCases.push(fixture);
+ }
+ const connection={id:selectorCases[0].connectionId,applicationId:selectorCases[0].applicationId};
+ const personal={id:selectorCases[0].foreignConnectionId};
  const project=await req('/api/companies/'+company.id+'/projects',{name:'GitHub and three designs',repositoryUrls:['https://github.com/vistecsol/paperclip-figma-integration']});
- const state={companyId:company.id,projectId:project.id,installed,connectionId:connection.id,applicationId:connection.applicationId,issuePrefix:company.issuePrefix,foreignConnectionId:personal.id};
+ const state={companyId:company.id,projectId:project.id,installed,connectionId:connection.id,applicationId:connection.applicationId,issuePrefix:company.issuePrefix,foreignConnectionId:personal.id,selectorCases};
  fs.writeFileSync(root+'/qualification-state.json',JSON.stringify(state),{mode:0o600});
  const base='/api/plugins/'+pluginId;
  const list=async()=>{const v=await req(base+'/data/designs.list',{companyId:company.id,params:{projectId:project.id}});assert.equal(v.data.status,200);return v.data.body;};

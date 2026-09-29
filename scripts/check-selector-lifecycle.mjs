@@ -29,3 +29,30 @@ async function exercise(corrupt=false){
 assert.equal((await exercise()).preserved,true);
 await assert.rejects(exercise(true));
 console.log('Offline assertion contracts passed; no browser/native lifecycle execution claimed.');
+
+const {seedDraftPair,assertDraftPair,selectorOrders}=await import('../operator/selector-fixtures.mjs');
+const {assertRenderedIdentity}=await import('../operator/qualification-selector.mjs');
+for(const order of selectorOrders){
+ const writes=[];
+ const pair=await seedDraftPair({order,create:async(kind,body)=>{
+  writes.push(body);
+  if(writes.length===1)assert.equal(body.applicationName,'Figma');
+  else {assert.equal(body.applicationId,'app');assert.equal('applicationName' in body,false);}
+  return {...body,id:kind,applicationId:'app',companyId:'c',createdByUserId:kind==='shared'?'owner':'foreign',credentialSecretRefs:[]};
+ }});
+ const rows=order==='foreign-first'?[pair.foreign,pair.shared]:[pair.shared,pair.foreign];
+ const state={order,companyId:'c',applicationId:'app',connectionId:'shared',foreignConnectionId:'foreign',ownerUserId:'owner',foreignUserId:'foreign'};
+ assertDraftPair(rows,state);
+ assert.throws(()=>assertDraftPair([...rows].reverse(),state));
+ assert.throws(()=>assertDraftPair(rows.map(x=>x.id==='foreign'?{...x,createdByUserId:'owner'}:x),state));
+}
+await assert.rejects(seedDraftPair({order:'foreign-first',create:async()=>({id:'missing-app'})}));
+const names={shared:'Qualification shared draft',foreign:'Foreign personal draft'};
+for(const mode of ['new','resume','reconnect']){
+ const observed={mode,names,text:mode==='new'?'Connect Figma':names.shared,selectedAudience:'Any human in the company'};
+ assertRenderedIdentity(observed);
+ assert.throws(()=>assertRenderedIdentity({...observed,text:names.foreign}));
+ assert.throws(()=>assertRenderedIdentity({...observed,selectedAudience:'Just me'}));
+ if(mode!=='new')assert.throws(()=>assertRenderedIdentity({...observed,text:'Connect Figma'}));
+}
+console.log('Both native-order fixture contracts, application-ID reuse and rendered-identity failure contracts passed offline.');

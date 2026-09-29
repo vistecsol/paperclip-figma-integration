@@ -51,3 +51,22 @@ export function assertSelectorIntent(events,{companyId,mode,connectionId}) {
 export async function createSelectorContext(browser,options={}) {
  return browser.newContext({...options,serviceWorkers:'block'});
 }
+
+// Read DOM-visible text/selected controls, never infer rendering from API metadata.
+export function assertRenderedIdentity({mode,text,selectedAudience,names}) {
+ assert.ok(['new','resume','reconnect'].includes(mode));
+ assert.equal(text.includes(names.foreign),false,'Foreign personal identity rendered');
+ if(mode==='new')assert.equal(text.includes(names.shared),false,'New setup rendered a retained identity');
+ else assert.ok(text.includes(names.shared),'Retained connection name is not rendered; identity acceptance remains unpassed');
+ assert.equal(selectedAudience,'Any human in the company','Rendered audience differs from the shared fixture');
+ return {name:mode==='new'?null:names.shared,audience:selectedAudience,source:'visible DOM',mode};
+}
+export async function captureRenderedIdentity(page,{mode,names}) {
+ const text=await page.locator('body').innerText();
+ const selected=page.getByRole('radio',{name:'Any human in the company',exact:true});
+ const selectedAudience=await selected.count() && await selected.getAttribute('aria-checked')==='true'
+  ?'Any human in the company'
+  :await page.getByText('Any human in the company',{exact:true}).isVisible().catch(()=>false)
+   && await page.getByRole('radio').count()===0?'Any human in the company':null;
+ return assertRenderedIdentity({mode,text,selectedAudience,names});
+}
