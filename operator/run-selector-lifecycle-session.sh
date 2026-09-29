@@ -26,9 +26,27 @@ cleanup(){
    docker inspect -f '{"id":"{{.Id}}","running":{{.State.Running}},"exit":{{.State.ExitCode}},"oom":{{.State.OOMKilled}},"memory":{{.HostConfig.Memory}},"swap":{{.HostConfig.MemorySwap}},"cpu":{{.HostConfig.NanoCpus}},"pids":{{.HostConfig.PidsLimit}}}' "$id" > "$role-final.json"
    docker logs "$id" > "$role-private.log" 2>&1
    docker stop --time 10 "$id" >/dev/null 2>&1
+   # DNS resolver is explicitly removed (not AutoRemove); preserve exact ownership.
+   if [ "$role" = resolver ]; then
+    test "$(docker inspect -f '{{.Id}}|{{.Name}}|{{index .Config.Labels "vts.figma.issue"}}|{{index .Config.Labels "vts.figma.run"}}' "$id")" = "$id|/vts-figma-test-dns-$run|VIS-6|$run" &&
+      docker rm "$id" >/dev/null || result=5
+   fi
   fi
   if docker inspect "$id" >/dev/null 2>&1; then result=5; echo "Exact resource remains: $role"; fi
  done
+ # Fallback for interrupted resolver helper: remove only its exact owned empty network.
+ if [ -f resolver-network-id ]; then
+  dns_network=$(cat resolver-network-id)
+  present=$(docker network ls -q --no-trunc --filter "id=$dns_network") || result=5
+  if [ -n "$present" ]; then
+   if [ "$present" = "$dns_network" ] &&
+      [ "$(docker network inspect -f '{{.Id}}|{{.Name}}|{{index .Labels "vts.figma.issue"}}|{{index .Labels "vts.figma.run"}}|{{len .Containers}}' "$dns_network")" = "$dns_network|vts-figma-test-dns-$run|VIS-6|$run|0" ]; then
+    docker network rm "$dns_network" >/dev/null || result=5
+   else result=5; fi
+  fi
+  remaining=$(docker network ls -q --no-trunc --filter "id=$dns_network") || result=5
+  [ -z "$remaining" ] || result=5
+ fi
  docker ps -aq --filter label=vts.figma.issue=VIS-6 --filter "label=vts.figma.run=$run" > remaining-containers.txt
  [ ! -s remaining-containers.txt ] || result=5
  curl --max-time 3 -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3310/api/health > offline.txt
