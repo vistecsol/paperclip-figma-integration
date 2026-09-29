@@ -14,6 +14,8 @@ async function req(path,body,method=body===undefined?'GET':'POST'){
  return data;
 }
 try{
+ fs.mkdirSync(root,{recursive:true});
+ fs.writeFileSync(root+'/qualification-attempt.json',JSON.stringify({startedAt:new Date().toISOString()}),{flag:'wx',mode:0o600});
  const health=await req('/api/health');assert.equal(health.status,'ok');
  const auth=await req('/api/auth/sign-up/email',account);
  fs.writeFileSync(root+'/qualification-account.json',JSON.stringify(account),{mode:0o600});
@@ -50,6 +52,6 @@ try{
  const repositoryAfter=(await req('/api/projects/'+project.id)).workspaces;assert.deepEqual(repositoryAfter,repositoryBefore);
  const final={snapshot:snap,repositories:repositoryAfter};
  fs.writeFileSync(root+'/qualification-snapshot.json',JSON.stringify(final),{mode:0o600});
- const index=fs.readFileSync('/app/ui/dist/index.html');const served=Buffer.from(await(await fetch(origin)).arrayBuffer());assert.ok(served.equals(index));
+ const index=fs.readFileSync('/app/ui/dist/index.html');const served=Buffer.from(await(await fetch(origin,{signal:AbortSignal.timeout(20000)})).arrayBuffer());assert.ok(served.equals(index));
  console.log(JSON.stringify({passed:true,receipts,state,initial,final,servedIndexSha256:createHash('sha256').update(served).digest('hex'),callsToProvider:0}));
 }catch(e){console.log(JSON.stringify({passed:false,receipts,error:e.message}));process.exitCode=1;}

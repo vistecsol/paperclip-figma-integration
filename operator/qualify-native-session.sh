@@ -16,7 +16,7 @@ docker exec "$cid" node -e '
 const fs=require("fs");
 for(const[k,v]of Object.entries({"memory.max":"1610612736","memory.swap.max":"0","cpu.max":"100000 100000","pids.max":"256"}))
  if(fs.readFileSync("/sys/fs/cgroup/"+k,"utf8").trim()!==v)throw Error("Ineffective "+k);
-if(fs.existsSync("/paperclip/instances/default/test-bootstrap/qualification-account.json"))
+if(["qualification-account.json","qualification-attempt.json"].some(n=>fs.existsSync("/paperclip/instances/default/test-bootstrap/"+n)))
  throw Error("Qualification requires fresh state; do not replay");
 '
 # This file performs bounded native loopback health/auth checks before mutations.
