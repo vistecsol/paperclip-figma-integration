@@ -3,9 +3,10 @@ import os, pathlib, subprocess, tempfile, json, shutil
 root=pathlib.Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(dir=os.environ.get('PAPERCLIP_RUN_SCRATCH_DIR')) as temp:
  p=pathlib.Path(temp); run='11111111-1111-1111-1111-111111111111'; cid='a'*64
- for name in ['validate-routing-in-probe.sh','routing-probe.mjs','qualification-routing.mjs']:
+ for name in ['validate-routing-in-probe.sh','routing-probe.mjs','qualification-routing.mjs','qualification-dns.mjs']:
   shutil.copy(root/'operator'/name,p/name)
  (p/'assert-session-window.sh').write_text('exit 0\n')
+ (p/'qualification-dns.json').write_text('{}')
  (p/'probe-id').write_text(cid);(p/'probe-image-id').write_text('sha256:fixed')
  for kind in ['app','browser','network','volume']:(p/f'routing-{kind}.json').write_text('[{}]')
  docker=p/'docker';docker.write_text('''#!/usr/bin/env python3

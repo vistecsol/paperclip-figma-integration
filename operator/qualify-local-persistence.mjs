@@ -1,6 +1,8 @@
 // Fresh, isolated, credential-free qualification instance only. No provider invocation.
 // A failed prerequisite ends the coordinated attempt; do not rerun against partial state.
 import fs from 'node:fs';
+import {lookup} from 'node:dns/promises';
+import {validateDnsReceipt,hostname} from './qualification-dns.mjs';
 import {randomBytes,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const origin='http://localhost:3310',root='/paperclip/instances/default/test-bootstrap';
@@ -14,6 +16,8 @@ async function req(path,body,method=body===undefined?'GET':'POST'){
  return data;
 }
 try{
+ const initialDns=JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8'));
+ validateDnsReceipt(initialDns,{run:process.env.QUALIFICATION_RUN_ID});
  fs.mkdirSync(root,{recursive:true});
  fs.writeFileSync(root+'/qualification-attempt.json',JSON.stringify({startedAt:new Date().toISOString()}),{flag:'wx',mode:0o600});
  const health=await req('/api/health');assert.equal(health.status,'ok');
@@ -25,6 +29,10 @@ try{
  console.log(JSON.stringify({stage:'installed',companyId:company.id,installed}));
  const pluginId=installed.id;
  await req('/api/plugins/'+pluginId+'/config',{companyId:company.id,configJson:{enabled:true}});
+ const dnsReceipt=JSON.parse(fs.readFileSync('/app/qualification-dns.json','utf8'));
+ validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
+ const resolved=await lookup(hostname,{all:true,verbatim:true});
+ assert.deepEqual([...new Set(resolved.map(x=>x.address))].sort(),dnsReceipt.answers.map(x=>x.address).sort(),'Installed OS resolver differs from receipt');
  const connection=await req('/api/companies/'+company.id+'/tools/connections',{name:'Qualification shared draft',applicationName:'Figma',transport:'mcp_remote',authKind:'oauth',credentialPolicy:'shared',status:'draft',enabled:true,config:{sourceTemplateKey:'figma',url:'https://mcp.figma.com/mcp'},transportConfig:{url:'https://mcp.figma.com/mcp'},credentialRefs:[]});
  const project=await req('/api/companies/'+company.id+'/projects',{name:'GitHub and three designs',repositoryUrls:['https://github.com/vistecsol/paperclip-figma-integration']});
  const state={companyId:company.id,projectId:project.id,installed,connectionId:connection.id,applicationId:connection.applicationId,issuePrefix:company.issuePrefix};

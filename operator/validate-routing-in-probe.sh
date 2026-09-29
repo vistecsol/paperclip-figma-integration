@@ -20,7 +20,11 @@ bash assert-session-window.sh "$3" "$4" "$5"
 {
  printf '{"source":"'
  base64 < qualification-routing.mjs | tr -d '\r\n'
- printf '","records":{"run":"%s",' "$run"
+ printf '","dnsSource":"'
+ base64 < qualification-dns.mjs | tr -d '\r\n'
+ printf '","dnsReceipt":'
+ cat qualification-dns.json
+ printf ',"records":{"run":"%s",' "$run"
  for kind in app browser network volume; do
   printf '"%s":' "$kind"
   # Feed the complete inspect array; unwrap inside trusted bootstrap call below.

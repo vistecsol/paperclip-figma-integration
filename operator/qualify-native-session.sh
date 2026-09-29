@@ -21,7 +21,9 @@ if(["qualification-account.json","qualification-attempt.json"].some(n=>fs.exists
 '
 # This file performs bounded native loopback health/auth checks before mutations.
 # An internal Docker network need not expose its published port on the Mac host.
+docker cp qualification-dns.mjs "$cid:/app/qualification-dns.mjs"
+docker cp qualification-dns.json "$cid:/app/qualification-dns.json"
 docker cp native-proof.mjs "$cid:/app/native-proof.mjs"
 bash assert-session-window.sh "$3" "$4" "$5"
-docker exec "$cid" node /app/native-proof.mjs > native-proof.json
+docker exec -e "QUALIFICATION_RUN_ID=$run" "$cid" node /app/native-proof.mjs > native-proof.json
 cat native-proof.json
