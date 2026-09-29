@@ -44,7 +44,7 @@ try{
  await req('/api/admin/users/'+foreignAuth.user.id+'/company-access',{companyIds:[company.id]},'PUT');
  cookie=foreignCookie;
  validateDnsReceipt(dnsReceipt,{run:process.env.QUALIFICATION_RUN_ID});
- const personal=await req('/api/companies/'+company.id+'/tools/connections',{name:'Foreign personal draft',applicationName:'Figma',transport:'mcp_remote',authKind:'oauth',credentialPolicy:'per_user',status:'draft',enabled:true,config:{sourceTemplateKey:'figma',url:'https://mcp.figma.com/mcp'},transportConfig:{url:'https://mcp.figma.com/mcp'},credentialRefs:[]});
+ const personal=await req('/api/companies/'+company.id+'/tools/connections',{name:'Foreign personal draft',applicationId:connection.applicationId,transport:'mcp_remote',authKind:'oauth',credentialPolicy:'per_user',status:'draft',enabled:true,config:{sourceTemplateKey:'figma',url:'https://mcp.figma.com/mcp'},transportConfig:{url:'https://mcp.figma.com/mcp'},credentialRefs:[]});
  cookie=ownerCookie;
  const project=await req('/api/companies/'+company.id+'/projects',{name:'GitHub and three designs',repositoryUrls:['https://github.com/vistecsol/paperclip-figma-integration']});
  const state={companyId:company.id,projectId:project.id,installed,connectionId:connection.id,applicationId:connection.applicationId,issuePrefix:company.issuePrefix,foreignConnectionId:personal.id};
