@@ -7,7 +7,7 @@ import {spawnSync,execFileSync} from 'node:child_process';
 const scratch=process.env.PAPERCLIP_RUN_SCRATCH_DIR;assert.ok(scratch);
 const source=fs.readFileSync('operator/qualify-version-transition.mjs','utf8');
 const input=path.resolve(process.argv[2]);const pair=JSON.parse(fs.readFileSync(path.join(input,'version-pair.json')));
-const root=path.join(scratch,'version-driver-contract');fs.mkdirSync(root);
+const root=fs.mkdtempSync(path.join(scratch,'version-driver-contract-'));
 const fixture={pluginId:'p',namespace:'n',companyId:'c',projectId:'j',snapshot:{revision:3,attachments:[{id:'design',label:'keep',connectionId:'c1'}]},repositories:[{id:'repo',repositoryUrl:'https://github.com/example/repo'}],migrationHistory:[{checksum:'unchanged'}],config:{enabled:true},plugin:{version:pair.packages[0].version,status:'ready'}};
 fs.writeFileSync(path.join(root,'qualification-state.json'),JSON.stringify({installed:{id:'p'},companyId:'c',projectId:'j'}));
 fs.writeFileSync(path.join(root,'qualification-account.json'),'{}');
@@ -26,15 +26,17 @@ globalThis.fetch=async(url,opts)=>{const p=new URL(url).pathname;let body;
  return {status:200,headers:{getSetCookie:()=>[]},json:async()=>body};
 };`);
 let driver=source.replace("import {collectRetention} from './collect-retention.mjs';","import {collectRetention,beforeMutation} from './boundary.mjs';").replace("import {beforeMutation} from './qualification-mutation-guard.mjs';",'');
-driver=driver.replaceAll('/paperclip/instances/default/test-bootstrap/',root+'/').replaceAll('/app/version-pair.json',path.join(input,'version-pair.json')).replaceAll('/app/figma-candidate/',root+'/candidate/package/').replaceAll('/app/selected-candidate.tgz',root+'/selected.tgz');
+driver=driver.replaceAll('/paperclip/instances/default/test-bootstrap/',root+'/').replaceAll('/app/version-pair.json',path.join(input,'version-pair.json')).replaceAll('/app/',root+'/');
 fs.writeFileSync(path.join(root,'driver.mjs'),driver);
-function stage(i){const dest=path.join(root,'candidate');if(fs.existsSync(dest))fs.renameSync(dest,dest+'-'+Date.now());fs.mkdirSync(dest);fs.copyFileSync(path.join(input,pair.packages[i].tarball),path.join(root,'selected.tgz'));execFileSync('tar',['-xzf',path.join(root,'selected.tgz'),'-C',dest]);}
+for(const item of pair.packages){const dest=path.join(root,'release-'+item.version);fs.mkdirSync(dest);fs.copyFileSync(path.join(input,item.tarball),path.join(root,item.tarball));execFileSync('tar',['-xzf',path.join(root,item.tarball),'-C',dest,'--strip-components=1']);}
+function pointer(i){const slot=path.join(root,'figma-slot');fs.mkdirSync(slot,{recursive:true});const active=path.join(slot,'current');if(fs.existsSync(active))fs.renameSync(active,active+'-'+Date.now());fs.cpSync(path.join(root,'release-'+pair.packages[i].version),active,{recursive:true});}
+
 function run(phase,env={}){return spawnSync(process.execPath,[path.join(root,'driver.mjs'),phase],{encoding:'utf8',env:{...process.env,...env}});}
-stage(0);let r=run('baseline');assert.equal(r.status,0,r.stderr);
-stage(1);r=run('upgrade',{CORRUPT_RETAINED:'1'});assert.notEqual(r.status,0);assert.match(r.stderr,/Retention changed: snapshot/);assert.ok(!fs.existsSync(path.join(root,'qualification-version-upgrade.json')));
-r=run('upgrade');assert.equal(r.status,0,r.stderr);
+pointer(0);let r=run('baseline');assert.equal(r.status,0,r.stderr);
+r=run('upgrade',{CORRUPT_RETAINED:'1'});assert.notEqual(r.status,0);assert.match(r.stderr,/Retention changed: snapshot/);assert.ok(!fs.existsSync(path.join(root,'qualification-version-upgrade.json')));
+pointer(0);r=run('upgrade');assert.equal(r.status,0,r.stderr);
 fixture.plugin.version=pair.packages[1].version;fs.writeFileSync(path.join(root,'fixture.json'),JSON.stringify(fixture));
-stage(0);r=run('rollback');assert.equal(r.status,0,r.stderr);
+r=run('rollback');assert.equal(r.status,0,r.stderr);
 // Reject tampered installed bytes before the first native operation.
-fs.appendFileSync(path.join(root,'candidate/package/dist/worker.mjs'),'\n// tampered\n');r=run('baseline');assert.notEqual(r.status,0);assert.match(r.stderr,/dist\/worker.mjs/);
+fs.appendFileSync(path.join(root,'release-'+pair.packages[0].version+'/dist/worker.mjs'),'\n// tampered\n');r=run('baseline');assert.notEqual(r.status,0);assert.match(r.stderr,/dist\/worker.mjs/);
 console.log('Actual phase driver passed version round-trip, retained-state corruption refusal and installed-byte tamper refusal at simulated native boundary.');

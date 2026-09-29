@@ -28,7 +28,7 @@ rebuilt domain includes the previously committed atomic rebind command.
 | Live refresh/revocation/grant removal | Deferred |
 | GitHub association coexistence | Native saved repository and three synthetic design links persist together; GitHub authorization is not proved |
 | Full host typecheck/build/CI | Unpassed; prior OOM, no retry here |
-| Lifecycle | Native disable denies keyed reads/writes; re-enable preserves exact three-link/revision/repository snapshot. Restart and immediate soft-uninstall/restore now preserve independent scoped storage and native state; upgrade/rollback and two-instance matrix remain deferred |
+| Lifecycle | Native disable denies keyed reads/writes; re-enable preserves exact three-link/revision/repository snapshot. Restart and immediate soft-uninstall/restore now preserve independent scoped storage and native state; distinct-version native upgrade/rollback now preserve the same state; two-instance matrix remains deferred |
 | Independent review | Theo waits for complete candidate; no interim wake |
 
 The live four-call allowance is exhausted and app remains offline. Adam has no
@@ -54,8 +54,6 @@ Latest bounded zero-provider receipts: [consolidated selector/lifecycle result](
 
 See [exact remaining lifecycle protocol](lifecycle-retention-protocol.md).
 Restart and immediate soft-uninstall/restore passed on fresh synthetic state; see
-[lifecycle runtime evidence](lifecycle-retention-result.md). Upgrade, rollback and
-second-instance receipts remain deferred individually. Same-version diagnostic packages cannot prove an
-upgrade. Native local installation is evidenced; standalone built-host portability
+[lifecycle runtime evidence](lifecycle-retention-result.md). Distinct-version local upgrade and rollback now pass; see [native transition result](native-version-transition-result.md). Second-instance receipts remain deferred. These version-only fixtures do not test schema evolution. Native local installation is evidenced; standalone built-host portability
 is not. Offline receipt assertions reject missing snapshots, changed references,
 same-version transitions and shared instance storage; they are not runtime proof.

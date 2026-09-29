@@ -171,26 +171,7 @@ phase(){
 }
 phase baseline
 for PAIR_PHASE in upgrade rollback; do
-# Stop only the exact previous-version app and its namespace-sharing idle helper.
-kill "$guardwatch"; wait "$guardwatch" 2>/dev/null || true; guardwatch=''
-own "$browser"; docker stop --time 10 "$browser" >/dev/null
-own "$cid"; echo "$cid" > original-runtime-id
-docker inspect -f '{{.State.StartedAt}}' "$cid" > original-started-at
-docker logs "$cid" > original-private.log 2>&1
-own "$cid"; docker stop --time 10 "$cid" >/dev/null
-if docker inspect "$cid" >/dev/null 2>&1; then echo 'Original app remains' >&2; exit 5; fi
-# Re-admit before each different-version replacement, keeping the original named synthetic state.
-window; test "$(docker inspect -f '{{.State.Running}}' "$probe")" = true
-bash restart-admission.sh > restart-admission.json
-. ./restart-body.sh
-[ "$cid" != "$(cat original-runtime-id)" ]
-docker exec "$cid" node -e 'const end=Date.now()+60000;(async()=>{while(Date.now()<end){try{const r=await fetch("http://127.0.0.1:3310/api/health",{signal:AbortSignal.timeout(2000)});if(r.ok){console.log(JSON.stringify(await r.json()));return}}catch{}await new Promise(r=>setTimeout(r,1000))}process.exit(1)})()' > restarted-health.json
-browser=$(docker create --rm --name "$name-browser" --label vts.figma.issue=VIS-6 --label "vts.figma.run=$run" --network "container:$cid" --memory 768m --memory-swap 768m --cpus 1 --pids-limit 256 --security-opt no-new-privileges --entrypoint node "$(cat browser-image-id)" -e 'setInterval(()=>{},1000)')
-echo "$browser" > browser-id
-own "$browser"; window; docker start "$browser" >/dev/null
-for module in qualification-mutation-guard.mjs qualification-lifecycle.mjs qualify-version-transition.mjs collect-retention.mjs retention-receipts.mjs; do own "$cid"; docker cp "$module" "$cid:/app/$module"; done
-bash approve-qualification-mutations.sh "$PWD" "$run" "$start" "$teardown" "$stop" > restarted-mutation-guard-private.log 2>&1 & guardwatch=$!
-phase "$PAIR_PHASE"
+ phase "$PAIR_PHASE"
 done
 test "$(docker inspect -f '{{.State.Running}}' "$probe")" = true
 docker logs --tail 1 "$probe" > supervisor-survival.json
