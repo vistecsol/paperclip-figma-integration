@@ -4,7 +4,7 @@ register_owned() { owned_ids+=("$1"); }
 cleanup_owned() {
   local result=$? id record
   trap - EXIT
-  for id in "${owned_ids[@]}"; do
+  for id in ${owned_ids[@]+"${owned_ids[@]}"}; do
     if ! record=$(docker inspect -f '{{.Name}} {{index .Config.Labels "vts.figma.issue"}} {{index .Config.Labels "vts.figma.run"}}' "$id" 2>/dev/null); then
       echo "Cleanup cannot verify $id; manual readback required" >&2
       result=1

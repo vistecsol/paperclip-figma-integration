@@ -15,6 +15,13 @@ inspect)
 esac
 """)
  (p/'docker').chmod(0o755)
+ # Empty cleanup must preserve the original failure without any Docker call.
+ log=p/'empty.log'
+ env={**os.environ,'PATH':d+':'+os.environ['PATH'],'CALLS':str(log)}
+ env.pop('BASH_ENV',None)
+ empty=subprocess.run(['bash','-uc','run=proof; source "$1"; exit 69','test',str(root/'operator/mac-owned-cleanup.sh')],cwd=d,env=env,capture_output=True)
+ assert empty.returncode==69,(empty.returncode,empty.stderr)
+ assert not log.exists(),'Empty cleanup must not call Docker'
  for actual,expected in [('proof',7),('foreign',1)]:
   log=p/(actual+'.log')
   env={**os.environ,'PATH':d+':'+os.environ['PATH'],'CALLS':str(log),'ACTUAL_RUN':actual}
