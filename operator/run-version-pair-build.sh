@@ -3,7 +3,8 @@
 set -euo pipefail
 export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 cd "${1:?fresh staging directory}"; run="${2:?run}"; revision="${3:?revision}"
-start=$(date +%s); teardown=$((start+1200)); stop=$((start+1500))
+start="${4:-$(date +%s)}"; teardown=$((start+1200)); stop=$((start+1500))
+[ "$(date +%s)" -ge "$start" ] && [ "$(date +%s)" -lt "$teardown" ]
 printf '%s %s %s\n' "$start" "$teardown" "$stop" > window.txt
 shasum -a 256 -c inputs.sha256 > input-verification.txt
 [ ! -e integration ]; tar -xzf integration.tar.gz

@@ -3,7 +3,10 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {spawn,execFileSync} from 'node:child_process';
 const read=p=>fs.readFileSync(p,'utf8').trim();
-for(const[k,v]of Object.entries({'memory.max':'1476395008','memory.swap.max':'0','cpu.max':'100000 100000','pids.max':'128'}))assert.equal(read('/sys/fs/cgroup/'+k),v);
+const relative=read('/proc/self/cgroup').split('\n').find(x=>x.startsWith('0::'))?.slice(3);
+assert.ok(relative&&relative!=='/'&&!relative.split('/').includes('..'));
+const ownCgroup=path.join('/sys/fs/cgroup',relative);
+for(const[k,v]of Object.entries({'memory.max':'1476395008','memory.swap.max':'0','cpu.max':'100000 100000','pids.max':'128'}))assert.equal(read(ownCgroup+'/'+k),v);
 assert.equal(process.arch,'arm64');
 const deadline=Number(process.env.PAIR_TEARDOWN)*1000;
 assert.ok(Date.now()+300000<deadline,'Insufficient time');
@@ -19,7 +22,7 @@ const capacity=()=>{
   }
   if(p==='/sys/fs/cgroup')break;p=path.dirname(p);
  }
- const d=fs.statfsSync('/app');return {headroom,diskFree:d.bavail*d.bsize,peak:read('/sys/fs/cgroup/memory.peak'),events:read('/sys/fs/cgroup/memory.events')};
+ const d=fs.statfsSync('/app');return {headroom,diskFree:d.bavail*d.bsize,peak:read(ownCgroup+'/memory.peak'),events:read(ownCgroup+'/memory.events')};
 };
 const initial=capacity();console.log(JSON.stringify({initial}));assert.ok(initial.headroom>=2752*1024**2&&initial.diskFree>=2*1024**3);
 execFileSync('chown',['-R',`${process.getuid()}:${process.getgid()}`,'/app/integration']);
