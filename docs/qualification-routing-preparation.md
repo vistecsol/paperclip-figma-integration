@@ -37,13 +37,14 @@ Copy the committed operator files to a fresh run-owned Mac session directory:
 - assert-session-window.sh, qualify-native-session.sh
 - qualify-local-persistence.mjs as native-proof.mjs
 - qualification-routing.mjs, qualify-browser-routing.mjs
-- qualify-routing-session.sh and mac-owned-cleanup.sh
+- qualify-routing-session.sh, validate-routing-in-probe.sh, routing-probe.mjs
+- mac-owned-cleanup.sh
 
 Use the authorized /Users/nolan/vts-figma-test/bin/docker-job wrapper with
 /Applications/Docker.app/Contents/Resources/bin on PATH. Do not bypass its lock.
-Confirm host Node availability before any creation (the pure validator runs in
-that Node process); lack of Node is a preparation failure, not permission to
-launch an extra host module graph in the app.
+Host Node is no longer required. The pure validator runs through the already
+running capped Node supervision probe. See qualification-probe-preparation.md
+for its independent pre-execution checks and exact input/launch contract.
 
 Prepare a credential-free browser dependency image before the app: use the
 already verified pinned arm64 dependency image and browser install recipe,

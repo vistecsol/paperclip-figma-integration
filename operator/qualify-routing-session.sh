@@ -11,12 +11,7 @@ docker inspect "$app" > routing-app.json
 docker inspect "$browser" > routing-browser.json
 docker network inspect "$network" > routing-network.json
 docker volume inspect "$volume" > routing-volume.json
-node --input-type=module - "$run" <<'JS'
-import fs from 'node:fs';
-import {validateRouting} from './qualification-routing.mjs';
-const read=n=>JSON.parse(fs.readFileSync('routing-'+n+'.json'))[0];
-console.log(JSON.stringify(validateRouting({app:read('app'),browser:read('browser'),network:read('network'),volume:read('volume'),run:process.argv[2]})));
-JS
+bash validate-routing-in-probe.sh "$PWD" "$run" "$start" "$teardown" "$stop"
 # Native wrapper refuses partially initialized state and checks app cgroup limits.
 bash qualify-native-session.sh "$PWD" "$run" "$start" "$teardown" "$stop"
 docker cp qualification-routing.mjs "$browser:/app/qualification-routing.mjs"
