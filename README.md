@@ -1,5 +1,10 @@
 # Paperclip Figma integration
 
+> Development stopped by the owner on 30 September 2026. This repository preserves
+> the unfinished engineering work and its history; it is not a finished release.
+> No further development or validation is scheduled. Historical instructions and
+> test windows below are retained as records, not active execution requests.
+
 Engineering preview `0.1.0-alpha.1`; **not a release candidate**. No publication
 or deployment is authorized. The package now has a native manifest and bundled
 worker. Its attachment RPC has been exercised through the actual loader, SDK,
